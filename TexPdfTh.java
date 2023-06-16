@@ -1,4 +1,6 @@
 import java.io.*;
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -7,15 +9,18 @@ public class TexPdfTh implements Runnable {
     InputStream input;
     boolean mergeb;
     boolean freeb;
+    
+    boolean graphb;
     public static int fn = 1;
     String name;
 
     //definizione dell'input, argomenti in ingresso
-    public TexPdfTh(InputStream is, String filename, Boolean merge, Boolean free) {
+    public TexPdfTh(InputStream is, String filename, Boolean merge, Boolean free, Boolean graph) {
         this.input = is;
         name = filename;
         mergeb = merge;
         freeb = free;
+        graphb = graph;
     }
 
     public void run() {
@@ -24,7 +29,7 @@ public class TexPdfTh implements Runnable {
             BufferedReader threadIn = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
             // creazione nomefile e file
 
-            String texname = name + fn + ".tex";
+            String texname = ASPect.file_out_prefix + name + fn + ".tex";
             StringBuilder before = new StringBuilder();
             StringBuilder after = new StringBuilder();
             String line = null;
@@ -67,13 +72,14 @@ public class TexPdfTh implements Runnable {
             String tikz_final = null;
             String[] tikz_commands = null;
             String tikz_commandline = null;
+            ArrayList<String> graph_links = new ArrayList<>();
 
             // lettura input
             tikz_commandline = threadIn.readLine();
 
             while (tikz_commandline != null) {
                 // creo file tex e buffer per scriverci
-                texname = name + fn + ".tex";
+                texname = ASPect.file_out_prefix + name + fn + ".tex";
                 File tex = new File(texname);
                 FileWriter fw = new FileWriter(tex);
                 BufferedWriter bw = new BufferedWriter(fw);
@@ -82,6 +88,9 @@ public class TexPdfTh implements Runnable {
 
                 // divido gli atomi
                 tikz_commands = tikz_commandline.split(" ");
+                // order is useful in graph mode so when I print multiple
+                // solutions of the same problem the layout is the same
+                Arrays.sort(tikz_commands);
 
                 // stampa header
                 if (mergeb) {
@@ -94,6 +103,21 @@ public class TexPdfTh implements Runnable {
 //                    }
                     out.println(before + ls);
 
+                } else if (graphb) {
+                    out.println("\\documentclass{article}\r\n"
+                            + "\\usepackage{tikz}\r\n"
+                            + "\\usepackage{graphicx}\r\n"
+                            + "\\usetikzlibrary{graphs,quotes,graphdrawing}\r\n"
+                            + "\\usegdlibrary{force}\r\n"                         
+                            + "\r\n"
+                            + "\\begin{document}\r\n"
+                            + "\\section*{Answer:" + fn + "}\r\n"
+                            + "\\begin{figure}[!h]\r\n"
+                            + "\\centering\r\n"
+                            + "\\resizebox{\\textwidth}{!}{%\r\n"
+                            + "\\begin{tikzpicture}\r\n"
+                            + "\\graph[spring layout, node distance=2cm and 2cm]{\r\n"
+                            + "\r\n");
                 } else {
                     out.println("\\documentclass{article}\r\n"
                             + "\\usepackage{tikz}\r\n"
@@ -101,6 +125,9 @@ public class TexPdfTh implements Runnable {
                             + "\r\n"
                             + "\\begin{document}\r\n"
                             + "\\section*{Answer:" + fn + "}\r\n"
+                            + "\\begin{figure}[!h]\r\n"
+                            + "\\centering\r\n"
+                            + "\\resizebox{\\textwidth}{!}{%\r\n"
                             + "\\begin{tikzpicture}"
                             + "\r\n");
                 }
@@ -110,9 +137,73 @@ public class TexPdfTh implements Runnable {
                     // stringbuilder per stampare le stringhe
                     StringBuilder tikz_tmp = new StringBuilder();
 
-                // traduzione rettangoli e ottenimento coordinate, scrittura comando tikz
+                
                     if (tikz_command.contains("aspect")) {
+                        
+                        // atomi in modalità graph
+                        if (graphb) {
 
+                            // traduzione nodi, scrittura comando tikz
+                            if (tikz_command.contains("node")) {
+
+                            String node_name = null;
+
+                            if (tikz_command.contains("draw")) {
+
+                                Pattern pattern = Pattern.compile("\\((.*?)\\)");
+                                Matcher matcher = pattern.matcher(tikz_command);
+                                if (matcher.find()) {
+                                    node_name = matcher.group(1);
+                                }
+
+                                tikz_tmp.append("{");
+                                tikz_tmp.append(node_name);
+                                tikz_tmp.append("[minimum size=7mm, circle, draw]},");
+                                tikz_final = tikz_tmp.toString();
+                                out.println(tikz_final);
+                                // nodo colorato
+                            } else if (tikz_command.contains("color")) {
+
+                                String color = null;
+
+                                Pattern pattern1 = Pattern.compile("\\((.*?),");
+                                Matcher matcher1 = pattern1.matcher(tikz_command);
+
+                                Pattern pattern2 = Pattern.compile(",(\\w+)\\)");
+                                Matcher matcher2 = pattern2.matcher(tikz_command);
+                                if (matcher1.find()) {
+                                    node_name = matcher1.group(1);
+                                }
+                                if (matcher2.find()) {
+                                    color = matcher2.group(1);
+                                }
+
+                                tikz_tmp.append("{");
+                                tikz_tmp.append(node_name);
+                                tikz_tmp.append("[fill=");
+                                tikz_tmp.append(color);
+                                tikz_tmp.append(", minimum size=7mm, circle, draw]");
+                                tikz_tmp.append("}, ");
+                                tikz_final = tikz_tmp.toString();
+                                out.println(tikz_final);
+                                
+                            } 
+
+                            // traduzione connessioni, scrittura comando tikz
+                        } else if (tikz_command.contains("line")) {
+
+                                graph_links.add(tikz_command);
+                            
+                            }
+                            // traduzione frecce, scrittura comando tikz
+                             else if (tikz_command.contains("arrow")) {
+
+                                graph_links.add(tikz_command);
+                               
+                            }
+                            
+                        } else {
+                        // traduzione rettangoli e ottenimento coordinate, scrittura comando tikz
                         if (tikz_command.contains("rectangle")) {
 
                             tikz_coord = tikz_command.replaceAll("[^0-9]+", " ");
@@ -589,6 +680,8 @@ public class TexPdfTh implements Runnable {
                                 tikz_tmp.append(");");
                                 tikz_final = tikz_tmp.toString();
                                 out.println(tikz_final);
+
+                                }
                             }
                         }
                     }
@@ -605,9 +698,158 @@ public class TexPdfTh implements Runnable {
 //                        out.println(s + "\r\n");
 //                    }
                     out.println(after + ls);
+                } else if (graphb) {
+
+                    for (String tikz_command : graph_links) {
+                        // stringbuilder per stampare le stringhe
+                        StringBuilder tikz_tmp = new StringBuilder();                                                          
+    
+                        // traduzione connessioni, scrittura comando tikz
+                            if (tikz_command.contains("line")) {
+                                
+                                    String node1 = null;
+                                    String node2 = null;
+
+                                if (tikz_command.contains("draw")) {
+    
+                                    Pattern pattern1 = Pattern.compile("\\((.*?),");
+                                    Matcher matcher1 = pattern1.matcher(tikz_command);
+    
+                                    Pattern pattern2 = Pattern.compile(",(.*?)\\)");
+                                    Matcher matcher2 = pattern2.matcher(tikz_command);
+    
+                                    if (matcher1.find()) {
+                                        node1 = matcher1.group(1);
+                                    }
+                                    if (matcher2.find()) {
+                                        node2 = matcher2.group(1);
+                                    }
+    
+                                    tikz_tmp.append("{");
+                                    tikz_tmp.append(node1);
+                                    tikz_tmp.append("--");
+                                    tikz_tmp.append(node2);
+                                    tikz_tmp.append("}, ");
+                                    tikz_final = tikz_tmp.toString();
+                                    out.println(tikz_final);
+    
+                                    // linee etichettate
+                                } else if (tikz_command.contains("quote")) {
+                                    String quote = null;
+    
+                                    Pattern pattern1 = Pattern.compile("\\((.*?),");
+                                    Matcher matcher1 = pattern1.matcher(tikz_command);
+    
+                                    Pattern pattern2 = Pattern.compile(",(.*?),");
+                                    Matcher matcher2 = pattern2.matcher(tikz_command);
+    
+                                    Pattern pattern = Pattern.compile("\"(.*?)\"");
+                                    Matcher matcher = pattern.matcher(tikz_command);
+    
+    
+                                    if (matcher1.find()) {
+                                        node1 = matcher1.group(1);
+                                    }
+                                    if (matcher2.find()) {
+                                        node2 = matcher2.group(1);
+                                    }
+                                    if (matcher.find()) {
+                                        quote = matcher.group(1);
+                                    }
+    
+                                    tikz_tmp.append("{");
+                                    tikz_tmp.append(node1);
+                                    tikz_tmp.append("--[\"");
+                                    tikz_tmp.append(quote);
+                                    tikz_tmp.append("\"]");
+                                    tikz_tmp.append(node2);
+                                    tikz_tmp.append("}, ");
+                                    tikz_final = tikz_tmp.toString();
+                                    out.println(tikz_final);
+                                    }
+                                // traduzione frecce, scrittura comando tikz
+                                } else if (tikz_command.contains("arrow")) {
+    
+                                    String node1 = null;
+                                    String node2 = null;
+    
+                                    if (tikz_command.contains("draw")) {
+    
+                                        Pattern pattern1 = Pattern.compile("\\((.*?),");
+                                        Matcher matcher1 = pattern1.matcher(tikz_command);
+    
+                                        Pattern pattern2 = Pattern.compile(",(.*?)\\)");
+                                        Matcher matcher2 = pattern2.matcher(tikz_command);
+    
+                                        if (matcher1.find()) {
+                                            node1 = matcher1.group(1);
+                                        }
+                                        if (matcher2.find()) {
+                                            node2 = matcher2.group(1);
+                                        }
+    
+                                        tikz_tmp.append("{");
+                                        tikz_tmp.append(node1);
+                                        tikz_tmp.append("->");
+                                        tikz_tmp.append(node2);
+                                        tikz_tmp.append("}, ");
+                                        tikz_final = tikz_tmp.toString();
+                                        out.println(tikz_final);
+    
+                                        // linee etichettate
+                                    } else if (tikz_command.contains("quote")) {
+                                        String quote = null;
+    
+                                        Pattern pattern1 = Pattern.compile("\\((.*?),");
+                                        Matcher matcher1 = pattern1.matcher(tikz_command);
+    
+                                        Pattern pattern2 = Pattern.compile(",(.*?),");
+                                        Matcher matcher2 = pattern2.matcher(tikz_command);
+    
+                                        Pattern pattern = Pattern.compile("\"(.*?)\"");
+                                        Matcher matcher = pattern.matcher(tikz_command);
+    
+    
+                                        if (matcher1.find()) {
+                                            node1 = matcher1.group(1);
+                                        }
+                                        if (matcher2.find()) {
+                                            node2 = matcher2.group(1);
+                                        }
+                                        if (matcher.find()) {
+                                            quote = matcher.group(1);
+                                        }
+    
+                                        tikz_tmp.append("{");
+                                        tikz_tmp.append(node1);
+                                        tikz_tmp.append("->[\"");
+                                        tikz_tmp.append(quote);
+                                        tikz_tmp.append("\"] ");
+                                        tikz_tmp.append(node2);
+                                        tikz_tmp.append("}, ");
+                                        tikz_final = tikz_tmp.toString();
+                                        out.println(tikz_final);
+                                    }
+                            }
+                    }
+                                
+                            
+
+
+
+
+
+                    out.println("\r\n"
+                            + "};\r\n"
+                            + "\\end{tikzpicture}\r\n"
+                            + "}\r\n"
+                            + "\\end{figure}\r\n"
+                            + "\\end{document}\r\n");
                 } else {
                     out.println("\r\n"
                             + "\\end{tikzpicture}\r\n"
+                            + "}\r\n"
+                            + "\\end{figure}\r\n"
                             + "\\end{document}\r\n");
                 }
                 // flush e chiusura buffer output
@@ -624,7 +866,12 @@ public class TexPdfTh implements Runnable {
                 // avvio pdflatex e passaggio del file creato
                 if (!mergeb && !freeb) {
                     ProcessBuilder processBuilderPDF = new ProcessBuilder();
-                    processBuilderPDF.command("sh", "-c", "pdflatex " + texname);
+                    if (graphb) {
+                        processBuilderPDF.command("sh", "-c", "lualatex " + texname);
+                    }
+                    else {
+                        processBuilderPDF.command("sh", "-c", "pdflatex " + texname);
+                    }
                     Process pdf = processBuilderPDF.start();
 
 

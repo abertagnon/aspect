@@ -1,7 +1,9 @@
 
 import java.io.*;
+import java.nio.file.Paths;
 
 public class ASPect {
+    public static String file_out_prefix = "aspect_out_";
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -11,9 +13,11 @@ public class ASPect {
         // stringa contenente il nome dell'ultimo file passato senza l'estensione .asp
         int l_arg = args.length - 1;
         String name0 = args[l_arg];
-        String name = name0.substring(0, name0.lastIndexOf("."));
+        String name_with_extension = Paths.get(name0).getFileName().toString();
+        String name = name_with_extension.substring(0, name_with_extension.lastIndexOf("."));
         boolean merge = false;
         boolean free = false;
+        boolean graph = false;
         String resfactor = "5";
         StringBuilder argsBuilder = new StringBuilder();
         // check per merge
@@ -36,6 +40,11 @@ public class ASPect {
             for (int i = 1; i < args.length; i++) {
                 argsBuilder.append(" ").append(args[i]);
             }
+        } else if (args[0].equals("graph")) {
+            graph = true;
+            for (int i = 1; i < args.length; i++) {
+                argsBuilder.append(" ").append(args[i]);
+            }
         } else {
             for (String arg : args) {
                 argsBuilder.append(" ").append(arg);
@@ -51,7 +60,7 @@ public class ASPect {
             PipedInputStream is = new PipedInputStream();
             os.connect(is);
             ClingoTh cl = new ClingoTh(os, arguments);
-            TexPdfTh tp = new TexPdfTh(is, name, merge, free);
+            TexPdfTh tp = new TexPdfTh(is, name, merge, free, graph);
 
             Thread clingo = new Thread(cl);
             Thread texpdf = new Thread(tp);
@@ -64,7 +73,7 @@ public class ASPect {
             if (merge) {
                 int filenumber;
                 filenumber = TexPdfTh.fn; // associare numero di file da thread texpdf
-                String mergedname = name + "_merged.tex";
+                String mergedname = file_out_prefix + name + "_merged.tex";
                 File merged = new File(mergedname);
                 FileWriter fw = new FileWriter(merged);
                 BufferedWriter bw = new BufferedWriter(fw);
@@ -77,7 +86,7 @@ public class ASPect {
                 for (int j = 1; j < filenumber; j++) {
                     out.println("\\begin{frame}\r\n"
                             + "\\resizebox{" + resfactor + "em}{" + resfactor + "em}{\r\n"
-                            + "\\input{" + name + j + "}\r\n"
+                            + "\\input{" + file_out_prefix + name + j + "}\r\n"
                             + "}\r\n"
                             + "\\end{frame}\r\n");
                 }
@@ -103,7 +112,7 @@ public class ASPect {
             } else if (free) {
                 int filenumber;
                 filenumber = TexPdfTh.fn; // associare numero di file da thread texpdf
-                String mergedname = name + "_final.tex";
+                String mergedname = file_out_prefix + name + "_final.tex";
                 File merged = new File(mergedname);
                 FileWriter fw = new FileWriter(merged);
                 BufferedWriter bw = new BufferedWriter(fw);
@@ -114,7 +123,7 @@ public class ASPect {
                         + "\r\n"
                         + "\\begin{document}\r\n");
                 for (int j = 1; j < filenumber; j++) {
-                    out.println("\\input{" + name + j + "}\r\n");
+                    out.println("\\input{" + file_out_prefix + name + j + "}\r\n");
                 }
                 out.println("\\end{document}");
                 out.flush();
