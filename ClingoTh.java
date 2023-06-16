@@ -29,15 +29,16 @@ public class ClingoTh implements Runnable {
             Process clingo = processBuilder.start();
             System.out.print("clingo is running...\r\n");
             InputStream in = clingo.getInputStream();
-            InputStream err = clingo.getErrorStream();
-            BufferedReader errread = new BufferedReader(new InputStreamReader(err));
-            String error = null;
-            error = errread.readLine();
-            while (error != null) {
-                System.err.println(error);
-                error = errread.readLine();
-            }
 
+            InputStream err = clingo.getErrorStream();
+            if (err.available() > 0) {
+                BufferedReader errread = new BufferedReader(new InputStreamReader(err));
+                String error = errread.readLine();
+                do {
+                    System.err.println(error);
+                    error = errread.readLine();
+                } while (error != null);
+            }
             // lettura linee di output con Buffered Reader,
             // le salvo in una lista di stringhe se contengono answer o aspect
 
