@@ -1,4 +1,3 @@
-
 import java.io.*;
 import java.nio.file.Paths;
 
@@ -21,34 +20,39 @@ public class ASPect {
         String resfactor = "5";
         StringBuilder argsBuilder = new StringBuilder();
         // check per merge
-        if (args[0].equals("merge")) {
-            merge = true;
+        switch (args[0]) {
+            case "merge":
+                merge = true;
 
-            if (args[1].contains("resize")) {
-                resfactor = args[1].replaceAll("[^0-9]+", " ").trim();
-                for (int i = 2; i < args.length; i++) {
-                    argsBuilder.append(" ").append(args[i]);
+                if (args[1].contains("resize")) {
+                    resfactor = args[1].replaceAll("[^0-9]+", " ").trim();
+                    for (int i = 2; i < args.length; i++) {
+                        argsBuilder.append(" ").append(args[i]);
 
+                    }
+                } else {
+                    for (int i = 1; i < args.length; i++) {
+                        argsBuilder.append(" ").append(args[i]);
+                    }
                 }
-            } else {
+                break;
+            case "free":
+                free = true;
                 for (int i = 1; i < args.length; i++) {
                     argsBuilder.append(" ").append(args[i]);
                 }
-            }
-        } else if (args[0].equals("free")) {
-            free = true;
-            for (int i = 1; i < args.length; i++) {
-                argsBuilder.append(" ").append(args[i]);
-            }
-        } else if (args[0].equals("graph")) {
-            graph = true;
-            for (int i = 1; i < args.length; i++) {
-                argsBuilder.append(" ").append(args[i]);
-            }
-        } else {
-            for (String arg : args) {
-                argsBuilder.append(" ").append(arg);
-            }
+                break;
+            case "graph":
+                graph = true;
+                for (int i = 1; i < args.length; i++) {
+                    argsBuilder.append(" ").append(args[i]);
+                }
+                break;
+            default:
+                for (String arg : args) {
+                    argsBuilder.append(" ").append(arg);
+                }
+                break;
         }
 
         // creazione stringa per passare argomenti spaziati a processbuilder (tornata utile con problema passaggio args risolto)
@@ -70,46 +74,9 @@ public class ASPect {
             clingo.join();
             texpdf.join();
 
-            if (merge) {
-                int filenumber;
-                filenumber = TexPdfTh.fn; // associare numero di file da thread texpdf
-                String mergedname = file_out_prefix + name + "_merged.tex";
-                File merged = new File(mergedname);
-                FileWriter fw = new FileWriter(merged);
-                BufferedWriter bw = new BufferedWriter(fw);
-                PrintWriter out = new PrintWriter(bw);
-                out.println("\\documentclass{beamer}\r\n"
-                        + "\\usepackage{tikz}\r\n"
-                        + "\\usepackage{graphicx}\r\n"
-                        + "\r\n"
-                        + "\\begin{document}\r\n");
-                for (int j = 1; j < filenumber; j++) {
-                    out.println("\\begin{frame}\r\n"
-                            + "\\resizebox{" + resfactor + "em}{" + resfactor + "em}{\r\n"
-                            + "\\input{" + file_out_prefix + name + j + "}\r\n"
-                            + "}\r\n"
-                            + "\\end{frame}\r\n");
-                }
-                out.println("\\end{document}");
-                out.flush();
-                bw.flush();
-                fw.flush();
 
-                out.close();
-                bw.close();
-                fw.close();
 
-                System.out.println("File created: " + mergedname);
-
-                ProcessBuilder processBuilderPDF = new ProcessBuilder();
-                processBuilderPDF.command("sh", "-c", "pdflatex " + mergedname);
-                Process mpdf = processBuilderPDF.start();
-
-                String mpdfname = mergedname.substring(0, mergedname.lastIndexOf(".")) + ".pdf";
-                System.out.println("File created: " + mpdfname + "\r");
-                mpdf.waitFor();
-
-            } else if (free) {
+            if (merge || free) {
                 int filenumber;
                 filenumber = TexPdfTh.fn; // associare numero di file da thread texpdf
                 String mergedname = file_out_prefix + name + "_final.tex";
@@ -117,13 +84,24 @@ public class ASPect {
                 FileWriter fw = new FileWriter(merged);
                 BufferedWriter bw = new BufferedWriter(fw);
                 PrintWriter out = new PrintWriter(bw);
-                out.println("\\documentclass{beamer}\r\n"
-                        + "\\usepackage{tikz}\r\n"
-                        + "\\usepackage{graphicx}\r\n"
-                        + "\r\n"
-                        + "\\begin{document}\r\n");
+                out.println("\\documentclass{beamer}" + System.lineSeparator()
+                            + "\\usepackage{tikz}" + System.lineSeparator()
+                            + "\\usepackage{graphicx}" + System.lineSeparator()
+                            + System.lineSeparator()
+                            + "\\begin{document}" + System.lineSeparator()
+                            );
                 for (int j = 1; j < filenumber; j++) {
-                    out.println("\\input{" + file_out_prefix + name + j + "}\r\n");
+                    if (merge) {
+                        out.println("\\begin{frame}" + System.lineSeparator()
+                                    + "\\resizebox{" + resfactor + "em}{" + resfactor + "em}{" + System.lineSeparator()
+                                    + "\\input{" + file_out_prefix + name + j + "}" + System.lineSeparator()
+                                    + "}" + System.lineSeparator()
+                                    + "\\end{frame}" + System.lineSeparator()
+                                    );
+                    }
+                    else if (free) {
+                        out.println("\\input{" + file_out_prefix + name + j + "}" + System.lineSeparator());
+                    }
                 }
                 out.println("\\end{document}");
                 out.flush();
@@ -137,12 +115,28 @@ public class ASPect {
                 System.out.println("File created: " + mergedname);
 
                 ProcessBuilder processBuilderPDF = new ProcessBuilder();
-                processBuilderPDF.command("sh", "-c", "pdflatex " + mergedname);
+                processBuilderPDF.command("pdflatex", "-shell-escape", "-halt-on-error", mergedname);
+                processBuilderPDF.redirectOutput(ProcessBuilder.Redirect.PIPE);
                 Process mpdf = processBuilderPDF.start();
 
                 String mpdfname = mergedname.substring(0, mergedname.lastIndexOf(".")) + ".pdf";
-                System.out.println("File created: " + mpdfname + "\r");
+                System.out.println("MERGE|FREE: Building... " + mpdfname + "\r");
                 mpdf.waitFor();
+
+                if(mpdf.exitValue() != 0){
+                    InputStream in = mpdf.getInputStream();
+                    if (in.available() > 0) {
+                        BufferedReader errread = new BufferedReader(new InputStreamReader(in));
+                        String error = errread.readLine();
+                        do {
+                            System.err.println(error);
+                            error = errread.readLine();
+                        } while (error != null);
+                        System.exit(1);
+                    }
+                }
+
+                System.out.println("MERGE|FREE: File created: " + mpdfname + "\r");
 
             }
 

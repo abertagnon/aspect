@@ -76,6 +76,11 @@ public class TexPdfTh implements Runnable {
 
             // lettura input
             tikz_commandline = threadIn.readLine();
+            if (tikz_commandline == null){
+                System.err.println("ASPECT atoms not found. Nothing to do !");
+                System.err.println("Please check the output of the ASP solver.");
+                System.exit(1);
+            }
 
             while (tikz_commandline != null) {
                 // creo file tex e buffer per scriverci
@@ -867,19 +872,34 @@ public class TexPdfTh implements Runnable {
                 if (!mergeb && !freeb) {
                     ProcessBuilder processBuilderPDF = new ProcessBuilder();
                     if (graphb) {
-                        processBuilderPDF.command("sh", "-c", "lualatex " + texname);
+                        processBuilderPDF.command("lualatex", "-halt-on-error", texname);
                     }
                     else {
-                        processBuilderPDF.command("sh", "-c", "pdflatex " + texname);
+                        processBuilderPDF.command("pdflatex", "-halt-on-error", texname);
                     }
+                    processBuilderPDF.redirectOutput(ProcessBuilder.Redirect.PIPE);
                     Process pdf = processBuilderPDF.start();
-
 
                     // ottenimento nome pdf e conferma creazione
                     String pdfname = texname.substring(0, texname.lastIndexOf(".")) + ".pdf";
-                    System.out.println("File created: " + pdfname + "\r");
+                    System.out.println("Building... " + pdfname + "\r");
                     // attendo fine esecuzione pdf
                     pdf.waitFor();
+
+                    if(pdf.exitValue() != 0){
+                        InputStream in = pdf.getInputStream();
+                        if (in.available() > 0) {
+                            BufferedReader errread = new BufferedReader(new InputStreamReader(in));
+                            String error = errread.readLine();
+                            do {
+                                System.err.println(error);
+                                error = errread.readLine();
+                            } while (error != null);
+                            System.exit(1);
+                        }
+                    }
+
+                    System.out.println("File created: " + pdfname + "\r");
                     // passo a nuova linea
 
                 }

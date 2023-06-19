@@ -1,7 +1,6 @@
 import java.io.*;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 
 public class ClingoTh implements Runnable {
@@ -26,10 +25,9 @@ public class ClingoTh implements Runnable {
             processBuilder.command("sh", "-c", "clingo " + arguments);
             processBuilder.redirectOutput(Redirect.PIPE);
             processBuilder.redirectError(Redirect.PIPE);
+            System.out.println("Starting clingo...");
             Process clingo = processBuilder.start();
-            System.out.print("clingo is running...\r\n");
             InputStream in = clingo.getInputStream();
-
             InputStream err = clingo.getErrorStream();
             if (err.available() > 0) {
                 BufferedReader errread = new BufferedReader(new InputStreamReader(err));
@@ -38,6 +36,7 @@ public class ClingoTh implements Runnable {
                     System.err.println(error);
                     error = errread.readLine();
                 } while (error != null);
+                System.exit(1);
             }
             // lettura linee di output con Buffered Reader,
             // le salvo in una lista di stringhe se contengono answer o aspect
