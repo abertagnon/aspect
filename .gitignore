@@ -20,3 +20,6 @@ out/
 
 # VS Code
 .vscode
+
+# Docs
+docs/_build/
