@@ -7,11 +7,17 @@ ASPECT syntax consists of special atomic formulas that define rendering of geome
 The syntax of the ASPECT language is inspired by the popular PGF/TikZ language developed for drawing vector graphics in the markup language LaTeX. 
 
 .. caution:: 
-   Different operating modes of the ASPECT interpreter (see :doc:`Operating Modes </options/modes>`) supports different sets of ASPECT atoms.
-   In particular, the graph mode supports a different set of atoms (see :ref:`here <graphModeAtoms>`).   
+  Different operating modes of the ASPECT interpreter (see :doc:`Operating Modes </options/modes>`) supports different sets of ASPECT atoms.
+  In particular, the graph mode supports a different set of atoms (see :ref:`here <graphModeAtoms>`).   
 
-List of ASPECT Atoms
---------------------
+.. danger:: 
+  The following two sets of ASPECT atoms (:ref:`"standard" <graphModeAtoms>` atoms and :ref:`graph <graphModeAtoms>` atoms) are incompatible 
+  so they cannot be used in the same ASP program at the same time.
+
+.. _standardModeAtoms:
+
+List of ASPECT Atoms (Standard)
+-------------------------------
 
 .. |line| image:: ../_static/images/line.png
   :width: 35%
@@ -149,12 +155,12 @@ List of ASPECT Atoms
 
 .. _graphModeAtoms:
 
-List of ASPECT Atoms (Graph mode)
+List of ASPECT Atoms (Graph)
 ---------------------------------
 
-Graph mode as the name suggests allows for quick visualization of solutions that can be
-represented by a graph. Graph mode allows the user to insert graphical elements without 
-having to worry about specifying coordinates, which will be handled automatically by the TikZ package.
+Graph mode as the name suggests allows for quick visualization of solutions that can be 
+represented by a graph. Graph mode allows the user to insert graphical elements **without 
+having to worry about specifying coordinates**, which will be handled automatically by the TikZ package.
 
 .. list-table::
    :widths: 1 2 3

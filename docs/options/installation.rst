@@ -8,7 +8,7 @@ The current release of ASPECT depends on an ASP solver and a LaTeX distribution.
 We chose `clingo <https://potassco.org/clingo/>`_ as ASP solver and `TeX Live <https://www.tug.org/texlive/>`_ as LaTeX software distribution.
 
 **Please refer to the manual of the various software for their installation.**
-If you are in a hurry, an easy way to install the various dependencies is to run the following commands:
+If you are in a hurry, an easy way to install the various dependencies is to run the following commands.
 
 clingo (using conda):
 
@@ -23,7 +23,7 @@ TeX Live (on Debian based Linux distributions):
     sudo apt-get install texlive-latex-base
     sudo apt-get install texlive-latex-extra
 
-To make sure everything is ready try running in the bash following commands:
+To make sure everything is ready try running in a shell the following commands:
 
 * ``clingo --version`` 
 * ``pdflatex --version``
@@ -35,7 +35,7 @@ Install ASPECT
 Two methods are available to install ASPECT:
 
 * Download the Java archive of the latest release
-* Building the sources
+* Build the sources
 
 
 Download Latest Release from GitHub
