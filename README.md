@@ -13,7 +13,7 @@
 ## How to Contribute
 :bulb: *Have an idea? :beetle: Found a bug?*
 
-Open an issue describing the contribution you would like to make, the bug you found or any other ideas you have.  
+Open an issue describing the contribution you would like to make, the bug you found or any other ideas you have. 
 You can also [contact us](https://docente.unife.it/alessandro.bertagnon) by email :envelope:.
 
 ## Publications
