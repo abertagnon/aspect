@@ -14,3 +14,7 @@
 # Maven
 log/
 target/
+
+# Artifacts
+out/
+src/resources/

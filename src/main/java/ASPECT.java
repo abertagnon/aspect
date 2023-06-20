@@ -3,7 +3,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import org.apache.commons.cli.*;
-public class ASPect {
+public class ASPECT {
     public static String file_out_prefix = "aspect_out_";
 
     public static void main(String[] args) {
