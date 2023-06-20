@@ -53,13 +53,13 @@ List of ASPECT Atoms
      - | Parameters 
        | description
    * - node 
-     - | ``aspect_drawnode(x1,y1,text)``
+     - | ``aspect_drawnode(x1,y1,"text")``
        | ``aspect_drawnode(x1,y1,X)``
-       | ``aspect_colornode(x1,y1,text,color)``
+       | ``aspect_colornode(x1,y1,"text",color)``
        | ``aspect_imagenode(x1,y1,image,width)``
      - | ``x1`` x-coordinate
        | ``y1`` y-coordinate
-       | ``text`` set the node label
+       | ``"text"`` set the node label
        | ``X`` ASP variable
        | ``color`` sets the line color
        | ``image`` path of image to include
@@ -173,13 +173,13 @@ having to worry about specifying coordinates, which will be handled automaticall
        | ``fill`` sets the fill color
    * - edge
      - | ``aspect_drawline(A,B)``
-       | ``aspect_quoteline(A,B,text)``
+       | ``aspect_quoteline(A,B,"text")``
      - | ``A`` node name first endpoint
        | ``B`` node name second endpoint
-       | ``text`` sets the edge label
+       | ``"text"`` sets the edge label
    * - arrow
      - | ``aspect_drawarrow(A,B)``
-       | ``aspect_quotearrow(A,B,text)``
+       | ``aspect_quotearrow(A,B,"text")``
      - | ``A`` node name arrow tail
        | ``B`` node name arrow tip
-       | ``text`` sets the edge label
+       | ``"text"`` sets the edge label

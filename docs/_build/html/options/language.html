@@ -19,7 +19,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="ASPECT Interpreter Operating Modes" href="modes.html" /> 
+    <link rel="next" title="Examples" href="examples.html" />
+    <link rel="prev" title="Operating Modes" href="modes.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -44,12 +45,13 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="modes.html">ASPECT Interpreter Operating Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modes.html">Operating Modes</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ASPECT Language</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#list-of-aspect-atoms">List of ASPECT Atoms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#list-of-aspect-atoms-graph-mode">List of ASPECT Atoms (Graph mode)</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
 </ul>
 
         </div>
@@ -115,16 +117,16 @@ In particular, the graph mode supports a different set of atoms (see <a class="r
 <tbody>
 <tr class="row-even"><td><p>node</p></td>
 <td><div class="line-block">
-<div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_drawnode(x1,y1,text)</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_drawnode(x1,y1,&quot;text&quot;)</span></code></div>
 <div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_drawnode(x1,y1,X)</span></code></div>
-<div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_colornode(x1,y1,text,color)</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_colornode(x1,y1,&quot;text&quot;,color)</span></code></div>
 <div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_imagenode(x1,y1,image,width)</span></code></div>
 </div>
 </td>
 <td><div class="line-block">
 <div class="line"><code class="docutils literal notranslate"><span class="pre">x1</span></code> x-coordinate</div>
 <div class="line"><code class="docutils literal notranslate"><span class="pre">y1</span></code> y-coordinate</div>
-<div class="line"><code class="docutils literal notranslate"><span class="pre">text</span></code> set the node label</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&quot;text&quot;</span></code> set the node label</div>
 <div class="line"><code class="docutils literal notranslate"><span class="pre">X</span></code> ASP variable</div>
 <div class="line"><code class="docutils literal notranslate"><span class="pre">color</span></code> sets the line color</div>
 <div class="line"><code class="docutils literal notranslate"><span class="pre">image</span></code> path of image to include</div>
@@ -326,26 +328,26 @@ having to worry about specifying coordinates, which will be handled automaticall
 <tr class="row-odd"><td><p>edge</p></td>
 <td><div class="line-block">
 <div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_drawline(A,B)</span></code></div>
-<div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_quoteline(A,B,text)</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_quoteline(A,B,&quot;text&quot;)</span></code></div>
 </div>
 </td>
 <td><div class="line-block">
 <div class="line"><code class="docutils literal notranslate"><span class="pre">A</span></code> node name first endpoint</div>
 <div class="line"><code class="docutils literal notranslate"><span class="pre">B</span></code> node name second endpoint</div>
-<div class="line"><code class="docutils literal notranslate"><span class="pre">text</span></code> sets the edge label</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&quot;text&quot;</span></code> sets the edge label</div>
 </div>
 </td>
 </tr>
 <tr class="row-even"><td><p>arrow</p></td>
 <td><div class="line-block">
 <div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_drawarrow(A,B)</span></code></div>
-<div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_quotearrow(A,B,text)</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">aspect_quotearrow(A,B,&quot;text&quot;)</span></code></div>
 </div>
 </td>
 <td><div class="line-block">
 <div class="line"><code class="docutils literal notranslate"><span class="pre">A</span></code> node name arrow tail</div>
 <div class="line"><code class="docutils literal notranslate"><span class="pre">B</span></code> node name arrow tip</div>
-<div class="line"><code class="docutils literal notranslate"><span class="pre">text</span></code> sets the edge label</div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">&quot;text&quot;</span></code> sets the edge label</div>
 </div>
 </td>
 </tr>
@@ -358,7 +360,8 @@ having to worry about specifying coordinates, which will be handled automaticall
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="modes.html" class="btn btn-neutral float-left" title="ASPECT Interpreter Operating Modes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modes.html" class="btn btn-neutral float-left" title="Operating Modes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -29,10 +29,19 @@ To make sure everything is ready try running in the bash following commands:
 * ``pdflatex --version``
 * ``lualtex --version``
 
-Download Latest Release from GitHub
------------------------------------
+Install ASPECT
+--------------
 
-The easiest way to start using ASPECT is to download the latest release of the interpreter from the project's `GitHub page <https://github.com/abertagnon/aspect>`_. 
+Two methods are available to install ASPECT:
+
+* Download the Java archive of the latest release
+* Building the sources
+
+
+Download Latest Release from GitHub
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The easiest way to start using ASPECT is to download the latest release of the interpreter from the project's `GitHub Releases Page <https://github.com/abertagnon/aspect/releases/>`_. 
 The release contains the ready-to-run Java archive (jar).
 JDK version 11 or later is required to run the application.
 
@@ -42,12 +51,12 @@ JDK version 11 or later is required to run the application.
 
 
 Building the sources
---------------------
+^^^^^^^^^^^^^^^^^^^^
 
-If you want to use the latest version of ASPECT, or you cannot use the precompiled archive, you can compile the project from source.
+If you want to use the latest version of ASPECT, or you cannot use the precompiled archive, you can compile the project from sources.
 
-The ASPECT interpreter is managed using `Maven <https://maven.apache.org/>`_.
-If it is not installed on your system first you need to install Maven, refer to the official guide for the installation procedure.
+The ASPECT interpreter source code is managed using `Maven <https://maven.apache.org/>`_.
+If it is not already installed on your system first you need to install Maven, refer to the official guide for the installation procedure.
 You can check the version of Maven installed on your system using the following command:
 
 .. code-block:: bash

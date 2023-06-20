@@ -46,8 +46,11 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#download-latest-release-from-github">Download Latest Release from GitHub</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#building-the-sources">Building the sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-aspect">Install ASPECT</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#download-latest-release-from-github">Download Latest Release from GitHub</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#building-the-sources">Building the sources</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="modes.html">Operating Modes</a></li>
@@ -103,9 +106,16 @@ sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w
 <li><p><code class="docutils literal notranslate"><span class="pre">lualtex</span> <span class="pre">--version</span></code></p></li>
 </ul>
 </section>
+<section id="install-aspect">
+<h2>Install ASPECT<a class="headerlink" href="#install-aspect" title="Permalink to this heading"></a></h2>
+<p>Two methods are available to install ASPECT:</p>
+<ul class="simple">
+<li><p>Download the Java archive of the latest release</p></li>
+<li><p>Building the sources</p></li>
+</ul>
 <section id="download-latest-release-from-github">
-<h2>Download Latest Release from GitHub<a class="headerlink" href="#download-latest-release-from-github" title="Permalink to this heading"></a></h2>
-<p>The easiest way to start using ASPECT is to download the latest release of the interpreter from the project’s <a class="reference external" href="https://github.com/abertagnon/aspect">GitHub page</a>.
+<h3>Download Latest Release from GitHub<a class="headerlink" href="#download-latest-release-from-github" title="Permalink to this heading"></a></h3>
+<p>The easiest way to start using ASPECT is to download the latest release of the interpreter from the project’s <a class="reference external" href="https://github.com/abertagnon/aspect/releases/">GitHub Releases Page</a>.
 The release contains the ready-to-run Java archive (jar).
 JDK version 11 or later is required to run the application.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>java<span class="w"> </span>-jar<span class="w"> </span>ASPECT.jar
@@ -113,7 +123,7 @@ JDK version 11 or later is required to run the application.</p>
 </div>
 </section>
 <section id="building-the-sources">
-<h2>Building the sources<a class="headerlink" href="#building-the-sources" title="Permalink to this heading"></a></h2>
+<h3>Building the sources<a class="headerlink" href="#building-the-sources" title="Permalink to this heading"></a></h3>
 <p>If you want to use the latest version of ASPECT, or you cannot use the precompiled archive, you can compile the project from source.</p>
 <p>The ASPECT interpreter is managed using <a class="reference external" href="https://maven.apache.org/">Maven</a>.
 If it is not installed on your system first you need to install Maven, refer to the official guide for the installation procedure.
@@ -130,6 +140,7 @@ mvn<span class="w"> </span>clean<span class="w"> </span>package
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>java<span class="w"> </span>-jar<span class="w"> </span>target/aspect-0.1.0-jar-with-dependencies.jar
 </pre></div>
 </div>
+</section>
 </section>
 </section>
 
