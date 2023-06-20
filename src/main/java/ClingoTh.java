@@ -35,6 +35,10 @@ public class ClingoTh implements Runnable {
                     System.err.println(error);
                     error = errread.readLine();
                 } while (error != null);
+
+                System.err.println("clingo encountered an error.");
+                System.err.println("Nothing else to do.");
+                System.exit(1);
             }
             // lettura linee di output con Buffered Reader,
             // le salvo in una lista di stringhe se contengono answer o aspect

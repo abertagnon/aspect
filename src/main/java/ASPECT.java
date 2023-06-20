@@ -7,7 +7,7 @@ public class ASPECT {
     public static String file_out_prefix = "aspect_out_";
 
     public static void main(String[] args) {
-        System.out.println("***** ASPect START *****");
+        System.out.println("***** ASPECT START *****");
         Options options = new Options();
 
         // merge mode
@@ -62,15 +62,15 @@ public class ASPECT {
             }
             // Special conditions on options
             if(merge && free){
-                throw new ParseException("*** ASPect ERROR: Merge mode and Free mode cannot be used together.");
+                throw new ParseException("*** ASPECT ERROR: Merge mode and Free mode cannot be used together.");
             }
             if(cmd.hasOption("r") && !merge){
-                System.err.println("*** ASPect WARNING: Resize option only used in merge mode. I'll ignore it.");
+                System.err.println("*** ASPECT WARNING: Resize option only used in merge mode. I'll ignore it.");
             }
             // all other arguments
             argList = cmd.getArgList();
             if (argList.size() < 1) {
-                throw new ParseException("*** ASPect ERROR: At least one input file is required.");
+                throw new ParseException("*** ASPECT ERROR: At least one input file is required.");
             }
             String name0 = argList.get(argList.size() - 1);
             String name_with_extension = Paths.get(name0).getFileName().toString();
@@ -78,7 +78,7 @@ public class ASPECT {
 
         } catch (ParseException e) {
             System.err.println(e.getMessage());
-            formatter.printHelp("ASPect [options] [(opt.) clingo arguments] [input files]", options);
+            formatter.printHelp("ASPECT [options] [(opt.) clingo arguments] [input1 [input2 [input3] ...]]", options);
             System.exit(1);
         }
 
@@ -173,6 +173,6 @@ public class ASPECT {
             e.printStackTrace();
         }
 
-        System.out.println("***** ASPect END *****");
+        System.out.println("***** ASPECT END *****");
     }
 }

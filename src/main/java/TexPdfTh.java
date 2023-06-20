@@ -60,7 +60,7 @@ public class TexPdfTh implements Runnable {
 
             while (tikz_commandline != null) {
                 // creo file tex e buffer per scriverci
-                String texname = ASPect.file_out_prefix + name + fn + ".tex";
+                String texname = ASPECT.file_out_prefix + name + fn + ".tex";
                 File tex = new File(texname);
                 FileWriter fw = new FileWriter(tex);
                 BufferedWriter bw = new BufferedWriter(fw);
