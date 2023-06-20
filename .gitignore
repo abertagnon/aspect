@@ -17,4 +17,6 @@ target/
 
 # Artifacts
 out/
-src/resources/
+
+# VS Code
+.vscode
