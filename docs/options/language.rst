@@ -7,7 +7,7 @@ ASPECT syntax consists of special atomic formulas that define rendering of geome
 The syntax of the ASPECT language is inspired by the popular PGF/TikZ language developed for drawing vector graphics in the markup language LaTeX. 
 
 .. caution:: 
-  Different operating modes of the ASPECT interpreter (see :doc:`Operating Modes </options/modes>`) supports different sets of ASPECT atoms.
+  Different operating modes of the ASPECT interpreter (see :doc:`Operating Modes </options/modes>`) support different sets of ASPECT atoms.
   In particular, the graph mode supports a different set of atoms (see :ref:`here <graphModeAtoms>`).   
 
 .. danger:: 
