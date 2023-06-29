@@ -460,8 +460,9 @@ public class TexPdfTh implements Runnable {
 
                                 // traduzione nodi e ottenimento coordinate, scrittura comando tikz
                             } else if (tikz_command.contains("node")) {
-                                tikz_coord = tikz_command.replaceAll("[^0-9]+", " ");
-                                coords = tikz_coord.trim().split(" ");
+                                tikz_coord = tikz_command.replaceAll("^[^(]*", "");
+                                tikz_coord = tikz_coord.replaceAll("[()]+", " ");
+                                coords = tikz_coord.trim().split(",");
                                 String node_type = null;
                                 Pattern pattern = Pattern.compile("\"(.*?)\"");
                                 Matcher matcher = pattern.matcher(tikz_command);
@@ -477,7 +478,7 @@ public class TexPdfTh implements Runnable {
                                     tikz_tmp.append(coords[0]);
                                     tikz_tmp.append(",");
                                     tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") node {\\LARGE");
+                                    tikz_tmp.append(") node {\\LARGE ");
                                     tikz_tmp.append(node_type);
                                     tikz_tmp.append("};");
                                     tikz_final = tikz_tmp.toString();
@@ -499,7 +500,7 @@ public class TexPdfTh implements Runnable {
                                     tikz_tmp.append(coords[0]);
                                     tikz_tmp.append(",");
                                     tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") node {\\LARGE");
+                                    tikz_tmp.append(") node {\\LARGE ");
                                     tikz_tmp.append(node_type);
                                     tikz_tmp.append("};");
                                     tikz_final = tikz_tmp.toString();
