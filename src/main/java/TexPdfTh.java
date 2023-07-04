@@ -463,58 +463,41 @@ public class TexPdfTh implements Runnable {
                                 tikz_coord = tikz_command.replaceAll("^[^(]*", "");
                                 tikz_coord = tikz_coord.replaceAll("[()]+", " ");
                                 coords = tikz_coord.trim().split(",");
-                                String node_type = null;
-                                Pattern pattern = Pattern.compile("\"(.*?)\"");
-                                Matcher matcher = pattern.matcher(tikz_command);
-                                if (matcher.find()) {
-                                    node_type = matcher.group(1);
-                                }
-                                // TODO: maybe rename this, I'm using coords and node_type for the text printed on the node
-                                if (node_type == null){
-                                    node_type = coords[2];
-                                }
+
+                                // TODO: maybe rename this, I'm using coords for the text printed on the node
                                 if (tikz_command.contains("draw")) {
                                     tikz_tmp.append("\\draw (");
                                     tikz_tmp.append(coords[0]);
                                     tikz_tmp.append(",");
                                     tikz_tmp.append(coords[1]);
                                     tikz_tmp.append(") node {\\LARGE ");
-                                    tikz_tmp.append(node_type);
+                                    tikz_tmp.append(coords[2].replaceAll("[\"]", ""));
                                     tikz_tmp.append("};");
                                     tikz_final = tikz_tmp.toString();
                                     out.println(tikz_final);
                                     // nodo colorato
                                 } else if (tikz_command.contains("color")) {
-
-                                    String color = null;
-
-                                    Pattern pattern1 = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher1 = pattern1.matcher(tikz_command);
-                                    if (matcher1.find()) {
-                                        color = matcher1.group(1);
-                                    }
-
                                     tikz_tmp.append("\\draw [color=");
-                                    tikz_tmp.append(color);
+                                    tikz_tmp.append(coords[3]);
                                     tikz_tmp.append("] (");
                                     tikz_tmp.append(coords[0]);
                                     tikz_tmp.append(",");
                                     tikz_tmp.append(coords[1]);
                                     tikz_tmp.append(") node {\\LARGE ");
-                                    tikz_tmp.append(node_type);
+                                    tikz_tmp.append(coords[2].replaceAll("[\"]", ""));
                                     tikz_tmp.append("};");
                                     tikz_final = tikz_tmp.toString();
                                     out.println(tikz_final);
-                                    // TODO: maybe rename this, I'm using coords[2] for width
+                                    // TODO: maybe rename this, I'm using coords[3] for width
                                 } else if (tikz_command.contains("image")) {
                                     tikz_tmp.append("\\node [inner sep=0pt] (img) at (");
                                     tikz_tmp.append(coords[0]);
                                     tikz_tmp.append(",");
                                     tikz_tmp.append(coords[1]);
                                     tikz_tmp.append(") {\\includegraphics[width=");
-                                    tikz_tmp.append(coords[2]);
+                                    tikz_tmp.append(coords[3]);
                                     tikz_tmp.append("px]{");
-                                    tikz_tmp.append(node_type);
+                                    tikz_tmp.append(coords[2]);
                                     tikz_tmp.append("}};");
                                     tikz_final = tikz_tmp.toString();
                                     out.println(tikz_final);
@@ -547,7 +530,6 @@ public class TexPdfTh implements Runnable {
                                     if (matcher.find()) {
                                         color = matcher.group(1);
                                     }
-
 
                                     tikz_tmp.append("\\draw [color=");
                                     tikz_tmp.append(color);
