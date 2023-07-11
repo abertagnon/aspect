@@ -17,4 +17,19 @@ Open an issue describing the contribution you would like to make, the bug you fo
 You can also [contact us](https://docente.unife.it/alessandro.bertagnon) by email :envelope:.
 
 ## Publications
-This tool is described in the paper *"ASPECT: Answer Set rePresentation as vEctor graphiCs in laTex"* by Alessandro Bertagnon, Marco Gavanelli and Fabio Zanotti accepted for publication at the 38th Italian Conference on Computational Logic (CILC 2023).
+This tool is described in the paper [*ASPECT: Answer Set rePresentation as vEctor graphiCs in laTex*](https://ceur-ws.org/Vol-3428/paper3.pdf) by Alessandro Bertagnon, Marco Gavanelli and Fabio Zanotti accepted for publication at the 38th Italian Conference on Computational Logic ([CILC 2023](https://www.programmazionelogica.it/associazione/il-convegno/cilc23/)).
+
+#### How to cite
+```
+@inproceedings{ASPECT2023,
+  author       = {Alessandro Bertagnon and Marco Gavanelli and Fabio Zanotti},
+  editor       = {Agostino Dovier and Andrea Formisano},
+  title        = {{ASPECT:} Answer Set rePresentation as vEctor graphiCs in laTex},
+  booktitle    = {Proceedings of the 38th Italian Conference on Computational Logic, Udine, Italy, June 21-23, 2023},
+  series       = {{CEUR} Workshop Proceedings},
+  volume       = {3428},
+  publisher    = {CEUR-WS.org},
+  year         = {2023},
+  url          = {https://ceur-ws.org/Vol-3428/paper3.pdf}
+}
+```
