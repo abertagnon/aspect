@@ -9,7 +9,7 @@
 project = 'ASPECT'
 copyright = '2023, Alessandro Bertagnon'
 author = 'Alessandro Bertagnon'
-release = 'v0.1.0'
+release = 'v0.1.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
