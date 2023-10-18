@@ -1,4 +1,5 @@
 import java.io.*;
+import org.apache.commons.lang3.SystemUtils;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.charset.StandardCharsets;
 public class ClingoTh implements Runnable {
@@ -19,6 +20,7 @@ public class ClingoTh implements Runnable {
             // faccio partire clingo, ridireziono l'output in input al mio programma
 
             ProcessBuilder processBuilder = new ProcessBuilder();
+            if (SystemUtils.IS_OS_MAC_OSX) System.setProperty( "jdk.lang.Process.launchMechanism", "fork" );
             processBuilder.command("sh", "-c", "clingo " + arguments);
             processBuilder.redirectOutput(Redirect.PIPE);
             processBuilder.redirectError(Redirect.PIPE);
