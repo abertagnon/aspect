@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'ASPECT'
-copyright = '2023, Alessandro Bertagnon'
-author = 'Alessandro Bertagnon'
+copyright = '2023, Alessandro Bertagnon, Marco Gavanelli, Fabio Zanotti'
+author = 'Alessandro Bertagnon, Marco Gavanelli, Fabio Zanotti'
 release = 'v0.1.2'
 
 # -- General configuration ---------------------------------------------------
@@ -18,7 +18,6 @@ extensions = []
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
 
 
 # -- Options for HTML output -------------------------------------------------
