@@ -1,5 +1,5 @@
 Operating Modes
-===============
++++++++++++++++
 
 .. code-block:: bash
 
