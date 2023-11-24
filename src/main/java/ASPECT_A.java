@@ -41,8 +41,8 @@ public class ASPECT_A {
                 .required(false)
                 .build());
         // speed option
-        options.addOption(Option.builder("s").longOpt("resize")
-                .desc("set spped parameter for animate mode (default 5)")
+        options.addOption(Option.builder("s").longOpt("speed")
+                .desc("set speed parameter for animate mode (default 5)")
                 .hasArg(true)
                 .required(false)
                 .build());
@@ -194,8 +194,8 @@ public class ASPECT_A {
             }
 
             if (animate) {
-                int filenumber;
-                filenumber = TexPdfTh.fn - 1;
+                int filenumber = TexPdfThNew.fn - 1;
+                if (filenumber == 0) filenumber = 1;
                 String strfn = String.valueOf(filenumber);
                 String animatedname = file_out_prefix + name + "_animation.tex";
                 File animated = new File(animatedname);
@@ -210,7 +210,7 @@ public class ASPECT_A {
                         + "\\frametitle{Frame title}" + ls
                         + "\\framesubtitle{Frame subtitle}" + ls
                         + "\\begin{center}" + ls
-                        + "\\animategraphics[autoplay, loop, width=.5\\linewidth]{" + speedFactor + "}{" + file_out_prefix + name + "}{1}{" + strfn +"}" + ls
+                        + "\\animategraphics[autoplay, loop, width=\\linewidth]{" + speedFactor + "}{" + file_out_prefix + name + "_}{1}{" + strfn +"}" + ls
                         + "\\end{center}" + ls
                         + "\\end{frame}" + ls
                         + "\\end{document}");

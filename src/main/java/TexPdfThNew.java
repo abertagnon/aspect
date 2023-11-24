@@ -1,8 +1,9 @@
-import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.SystemUtils;
 
-import javax.lang.model.type.NullType;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Matcher;
@@ -29,14 +30,22 @@ public class TexPdfThNew implements Runnable {
 
     private static Map<String, Object> processCommand(String command) {
 
-        Pattern nodePattern = Pattern.compile("aspect_(draw|color|image)node\\(([^,]+),([^,]+),(\"[^\"]+\"|[a-zA-Z]+|[^,]+)(?:,([^,]+)(?:,(\\d+))?\\))?");
-        Pattern linePattern = Pattern.compile("aspect_(draw|color)line\\(([^,]+),([^,]+),([^,]+),([^,]+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
-        Pattern arcPattern = Pattern.compile("aspect_(draw|color)arc\\(([^,]+),([^,]+),([^,]+),([^,]+),([^,]+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
-        Pattern arrowPattern = Pattern.compile("aspect_(draw|color)arrow\\(([^,]+),([^,]+),([^,]+),([^,]+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
-        Pattern rectanglePattern = Pattern.compile("aspect_(draw|color|fill)rectangle\\(([^,]+),([^,]+),([^,]+),([^,]+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
-        Pattern trianglePattern = Pattern.compile("aspect_(draw|color|fill)triangle\\(([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
-        Pattern circlePattern = Pattern.compile("aspect_(draw|color|fill)circle\\(([^,]+),([^,]+),([^,]+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
-        Pattern ellipsePattern = Pattern.compile("aspect_(draw|color|fill)ellipse\\(([^,]+),([^,]+),([^,]+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+        Pattern nodePattern =
+                Pattern.compile("aspect_(draw|image|color)node\\((\\d+),(\\d+),(\"[^\"]*\"|\\w+)?(?:,(\\w+))?(?:,(\\d+))?\\)");
+        Pattern linePattern =
+                Pattern.compile("aspect_(draw|color)line\\((\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+        Pattern arcPattern =
+                Pattern.compile("aspect_(draw|color)arc\\((\\d+),(\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+        Pattern arrowPattern =
+                Pattern.compile("aspect_(draw|color)arrow\\((\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+        Pattern rectanglePattern =
+                Pattern.compile("aspect_(draw|color|fill)rectangle\\((\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+        Pattern trianglePattern =
+                Pattern.compile("aspect_(draw|color|fill)triangle\\((\\d+),(\\d+),(\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+        Pattern circlePattern =
+                Pattern.compile("aspect_(draw|color|fill)circle\\((\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+        Pattern ellipsePattern =
+                Pattern.compile("aspect_(draw|color|fill)ellipse\\((\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
 
         Matcher matcher;
 
@@ -62,22 +71,34 @@ public class TexPdfThNew implements Runnable {
 
     private static Map<String, Object> processNode(Matcher matcher) {
         Map<String, Object> result = new HashMap<>();
-        String commandType = matcher.group(1);  // "draw" or "color"
+        String commandType = matcher.group(1);  // "draw" or "color" or "image"
         String x = matcher.group(2);
         String y = matcher.group(3);
-        String argument1 = matcher.group(4);  // text or image path
-        String argument2 = matcher.group(5);  // color or width
+        String argument1 = matcher.group(4).replace("\"", "");   // text or image path
+        String argument2 = matcher.group(5);  // color or width (color/image) or frame (draw)
         String t = matcher.group(6);
+        switch (commandType) {
+            case "draw":
+                if (argument2 == null || argument2.matches("\\d+")) {
+                    t = matcher.group(5);
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) node {\\LARGE %s};", x, y, argument1));
+                } else return null;
+                break;
+            case "color":
+                if (argument2 != null && !argument2.matches("\\d+")) {
+                    result.put("tikzCommand",
+                            String.format("\\draw [text=%s] (%s,%s) node {\\LARGE %s};", argument2, x, y, argument1));
+                } else return null;
+                break;
+            case "image":
+                if (argument2 != null && argument2.matches("\\d+")) {
+                    result.put("tikzCommand",
+                            String.format("\\node [inner sep=0pt] (img) at (%s,%s) {\\includegraphics[width=%s px]{%s}};", x, y, argument2, argument1));
+                } else return null;
+                break;
+        }
         result.put("frame", t);
-        if (commandType.equals("draw"))
-            result.put("tikzCommand",
-                    String.format("\\draw (%s,%s) node {\\LARGE %s};", x, y, argument1));
-        else if(commandType.equals("color") && argument2 != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [color=%s] (%s,%s) node {\\LARGE %s};", argument2, x, y, argument1));
-        else if(commandType.equals("image") && argument2 != null)
-            result.put("tikzCommand",
-                    String.format("\\node [inner sep=0pt] (img) at (%s,%s) {\\includegraphics[width=%s px]{%s}};", x, y, argument2, argument1));
         return result;
     }
 
@@ -91,12 +112,18 @@ public class TexPdfThNew implements Runnable {
         String color = matcher.group(6);
         String t = matcher.group(7);
         result.put("frame", t);
-        if (commandType.equals("draw"))
-            result.put("tikzCommand",
-                    String.format("\\draw (%s,%s) -- (%s,%s);", x1, y1, x2, y2));
-        else if(commandType.equals("color") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [color=%s] (%s,%s) -- (%s,%s);", color, x1, y1, x2, y2));
+        if (commandType.equals("draw")) {
+            if (color == null) {
+                result.put("tikzCommand",
+                        String.format("\\draw (%s,%s) -- (%s,%s);", x1, y1, x2, y2));
+            } else return null;
+        }
+        else if(commandType.equals("color")) {
+            if (color != null) {
+                result.put("tikzCommand",
+                        String.format("\\draw [color=%s] (%s,%s) -- (%s,%s);", color, x1, y1, x2, y2));
+            } else return null;
+        }
         return result;
     }
 
@@ -111,12 +138,18 @@ public class TexPdfThNew implements Runnable {
         String color = matcher.group(7);
         String t = matcher.group(8);
         result.put("frame", t);
-        if (commandType.equals("draw"))
-            result.put("tikzCommand",
-                    String.format("\\draw (%s,%s) arc (%s:%s:%s);", x1, y1, a1, a2, r1));
-        else if(commandType.equals("color") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [color=%s] (%s,%s) arc (%s:%s:%s);", color, x1, y1, a1, a2, r1));
+        if (commandType.equals("draw")) {
+            if (color == null) {
+                result.put("tikzCommand",
+                        String.format("\\draw (%s,%s) arc (%s:%s:%s);", x1, y1, a1, a2, r1));
+            } else return null;
+        }
+        else if(commandType.equals("color")) {
+            if (color != null) {
+                result.put("tikzCommand",
+                        String.format("\\draw [color=%s] (%s,%s) arc (%s:%s:%s);", color, x1, y1, a1, a2, r1));
+            } else return null;
+        }
         return result;
     }
 
@@ -130,12 +163,18 @@ public class TexPdfThNew implements Runnable {
         String color = matcher.group(6);
         String t = matcher.group(7);
         result.put("frame", t);
-        if (commandType.equals("draw"))
-            result.put("tikzCommand",
-                    String.format("\\draw (%s,%s) -> (%s,%s);", x1, y1, x2, y2));
-        else if(commandType.equals("color") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [color=%s] (%s,%s) -> (%s,%s);", color, x1, y1, x2, y2));
+        if (commandType.equals("draw")) {
+            if (color == null) {
+                result.put("tikzCommand",
+                        String.format("\\draw [->] (%s,%s) -- (%s,%s);", x1, y1, x2, y2));
+            } else return null;
+        }
+        else if(commandType.equals("color")) {
+            if (color != null) {
+                result.put("tikzCommand",
+                        String.format("\\draw [->, color=%s] (%s,%s) -- (%s,%s);", color, x1, y1, x2, y2));
+            } else return null;
+        }
         return result;
     }
 
@@ -149,15 +188,26 @@ public class TexPdfThNew implements Runnable {
         String color = matcher.group(6);
         String t = matcher.group(7);
         result.put("frame", t);
-        if (commandType.equals("draw"))
-            result.put("tikzCommand",
-                    String.format("\\draw (%s,%s) rectangle (%s,%s);", x1, y1, x2, y2));
-        else if (commandType.equals("color") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [color=%s] (%s,%s) rectangle (%s,%s);", color, x1, y1, x2, y2));
-        else if (commandType.equals("fill") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [fill=%s] (%s,%s) rectangle (%s,%s);", color, x1, y1, x2, y2));
+        switch (commandType) {
+            case "draw":
+                if (color == null) {
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) rectangle (%s,%s);", x1, y1, x2, y2));
+                } else return null;
+                break;
+            case "color":
+                if (color != null && !color.matches("\\d+")) {
+                    result.put("tikzCommand",
+                            String.format("\\draw [color=%s] (%s,%s) rectangle (%s,%s);", color, x1, y1, x2, y2));
+                } else return null;
+                break;
+            case "fill":
+                if (color != null && !color.matches("\\d+")) {
+                    result.put("tikzCommand",
+                            String.format("\\fill [%s] (%s,%s) rectangle (%s,%s);", color, x1, y1, x2, y2));
+                } else return null;
+                break;
+        }
         return result;
     }
 
@@ -173,15 +223,26 @@ public class TexPdfThNew implements Runnable {
         String color = matcher.group(8);
         String t = matcher.group(9);
         result.put("frame", t);
-        if (commandType.equals("draw"))
-            result.put("tikzCommand",
-                    String.format("\\draw (%s,%s) -- (%s,%s) -- (%s,%s) cycle;", x1, y1, x2, y2, x3, y3));
-        else if (commandType.equals("color") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [color=%s] (%s,%s) -- (%s,%s) -- (%s,%s) cycle;", color, x1, y1, x2, y2, x3, y3));
-        else if (commandType.equals("fill") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [fill=%s] (%s,%s) -- (%s,%s) -- (%s,%s) cycle;", color, x1, y1, x2, y2, x3, y3));
+        switch (commandType) {
+            case "draw":
+                if (color == null) {
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) -- (%s,%s) -- (%s,%s) -- cycle;", x1, y1, x2, y2, x3, y3));
+                } else return null;
+                break;
+            case "color":
+                if (color != null && !color.matches("\\d+")) {
+                    result.put("tikzCommand",
+                            String.format("\\draw [color=%s] (%s,%s) -- (%s,%s) -- (%s,%s) -- cycle;", color, x1, y1, x2, y2, x3, y3));
+                } else return null;
+                break;
+            case "fill":
+                if (color != null && !color.matches("\\d+")) {
+                    result.put("tikzCommand",
+                            String.format("\\fill [%s] (%s,%s) -- (%s,%s) -- (%s,%s) -- cycle;", color, x1, y1, x2, y2, x3, y3));
+                } else return null;
+                break;
+        }
         return result;
     }
 
@@ -194,37 +255,59 @@ public class TexPdfThNew implements Runnable {
         String color = matcher.group(5);
         String t = matcher.group(6);
         result.put("frame", t);
-        if (commandType.equals("draw"))
-            result.put("tikzCommand",
-                    String.format("\\draw (%s,%s) circle (%s);", x1, y1, r));
-        else if (commandType.equals("color") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [color=%s] (%s,%s) circle (%s);", color, x1, y1, r));
-        else if (commandType.equals("fill") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [fill=%s] (%s,%s) circle (%s);", color, x1, y1, r));
+        switch (commandType) {
+            case "draw":
+                if (color == null) {
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) circle (%s);", x1, y1, r));
+                } else return null;
+                break;
+            case "color":
+                if (color != null && !color.matches("\\d+")) {
+                    result.put("tikzCommand",
+                            String.format("\\draw [color=%s] (%s,%s) circle (%s);", color, x1, y1, r));
+                } else return null;
+                break;
+            case "fill":
+                if (color != null && !color.matches("\\d+")) {
+                    result.put("tikzCommand",
+                            String.format("\\fill [%s] (%s,%s) circle (%s);", color, x1, y1, r));
+                } else return null;
+                break;
+        }
         return result;
     }
 
     private static Map<String, Object> processEllipse(Matcher matcher) {
         Map<String, Object> result = new HashMap<>();
         String commandType = matcher.group(1);  // "draw" or "color" or "fill"
-        String x1 = matcher.group(1);
-        String y1 = matcher.group(2);
-        String r1 = matcher.group(3);
-        String r2 = matcher.group(4);
-        String color = matcher.group(5);
-        String t = matcher.group(6);
+        String x1 = matcher.group(2);
+        String y1 = matcher.group(3);
+        String r1 = matcher.group(4);
+        String r2 = matcher.group(5);
+        String color = matcher.group(6);
+        String t = matcher.group(7);
         result.put("frame", t);
-        if (commandType.equals("draw"))
-            result.put("tikzCommand",
-                    String.format("\\draw (%s,%s) ellipse (%s and %s);", x1, y1, r1, r2));
-        else if (commandType.equals("color") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [color=%s] (%s,%s) ellipse (%s and %s);", color, x1, y1, r1, r2));
-        else if (commandType.equals("fill") && color != null)
-            result.put("tikzCommand",
-                    String.format("\\draw [fill=%s] (%s,%s) ellipse (%s and %s);", color, x1, y1, r1, r2));
+        switch (commandType) {
+            case "draw":
+                if (color == null) {
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) ellipse (%s and %s);", x1, y1, r1, r2));
+                } else return null;
+                break;
+            case "color":
+                if (color != null && !color.matches("\\d+")) {
+                    result.put("tikzCommand",
+                            String.format("\\draw [color=%s] (%s,%s) ellipse (%s and %s);", color, x1, y1, r1, r2));
+                } else return null;
+                break;
+            case "fill":
+                if (color != null && !color.matches("\\d+")) {
+                    result.put("tikzCommand",
+                            String.format("\\fill [%s] (%s,%s) ellipse (%s and %s);", color, x1, y1, r1, r2));
+                } else return null;
+                break;
+        }
         return result;
     }
 
@@ -257,10 +340,10 @@ public class TexPdfThNew implements Runnable {
         if (commandType.equals("draw")) {
             if (arg1 != null)
                 result.put("tikzCommand",
-                        String.format("{%s[minimum size=7mm, draw]},", name));
+                        String.format("{%s[minimum size=7mm, %s, draw]},", name, arg1));
             else
                 result.put("tikzCommand",
-                        String.format("{%s[minimum size=7mm, arg1, draw]},", name));
+                        String.format("{%s[minimum size=7mm, circle, draw]},", name));
         }
         else if (commandType.equals("color") && arg1 != null){
             if (arg2 != null)
@@ -286,6 +369,7 @@ public class TexPdfThNew implements Runnable {
                     String.format("{%s -- %s},", argA, argB));
         }
         else if (commandType.equals("quote") && text != null){
+            text = text.replace("\"", "");
             result.put("tikzCommand",
                     String.format("{%s --[\"%s\"] %s},", argA, text, argB));
         }
@@ -305,6 +389,7 @@ public class TexPdfThNew implements Runnable {
                     String.format("{%s -> %s},", argA, argB));
         }
         else if (commandType.equals("quote") && text != null){
+            text = text.replace("\"", "");
             result.put("tikzCommand",
                     String.format("{%s ->[\"%s\"] %s},", argA, text, argB));
         }
@@ -339,180 +424,169 @@ public class TexPdfThNew implements Runnable {
 
             }
 
-            // lettura input
-            String tikz_commandline = threadIn.readLine();
-            if (tikz_commandline == null){
+            String inputAtomsString = threadIn.readLine();
+            System.out.println(inputAtomsString);
+
+            if (inputAtomsString == null){
                 System.err.println("ASPECT atoms not found. Nothing to do !");
                 System.err.println("Please check the output of the ASP solver.");
                 System.exit(1);
             }
 
-            while (tikz_commandline != null) {
-                // creo file tex e buffer per scriverci
-                String texname = ASPECT.file_out_prefix + name + fn + ".tex";
-                File tex = new File(texname);
-                FileWriter fw = new FileWriter(tex);
-                BufferedWriter bw = new BufferedWriter(fw);
-                PrintWriter out = new PrintWriter(bw);
+            while (inputAtomsString != null) {
+                Map<String, List<String>> frameCommandMap = new HashMap<>();
 
-                // stringhe e array necessari alla conversione
-                String[] tikz_commands;
-                ArrayList<String> graph_links = new ArrayList<>();
-
-                // divido gli atomi
-                tikz_commands = tikz_commandline.split(" ");
+                String[] inputAtomsArray = inputAtomsString.split(" ");
                 // order is useful in graph mode so when I print multiple
                 // solutions of the same problem the layout is the same
-                Arrays.sort(tikz_commands);
+                Arrays.sort(inputAtomsArray);
 
-                // stampa header
-                if (merge) {
-                    out.println("\\begin{tikzpicture}" + ls);
-                } else if (free) {
-                    out.println(before + ls);
-                    out.println("\\begin{tikzpicture}" + ls);
-                } else {
-                    //out.println("\\documentclass{article}" + ls
-                    out.println("\\documentclass[tikz, border=2pt]{standalone}\n" + ls);
-                            //+ "\\usepackage{tikz}" + ls
-                            //+ "\\usepackage{graphicx}" + ls);
-                    if(graph) {
-                        out.println("\\usetikzlibrary{graphs,quotes,graphdrawing}" + ls
-                                + "\\usegdlibrary{force}" + ls);
-                    }
-                    out.println("\\begin{document}" + ls
-                            //+ "\\section*{Answer:" + fn + "}" + ls
-                            //+ "\\begin{figure}[!h]" + ls
-                            //+ "\\centering" + ls
-                            //+ "\\resizebox{\\textwidth}{!}{%" + ls
-                            + "\\begin{tikzpicture}" + ls);
-                }
                 if (graph) {
-                    out.println("\\graph[spring layout, node distance=2cm and 2cm]{" + ls);
-                }
-
-                // ciclo sugli atomi
-                for (String tikz_command : tikz_commands) {
-
-                    if (tikz_command.contains("aspect")) {
-
-                        // atomi in modalità graph
-                        if (graph) {
-
-                            // traduzione nodi, scrittura comando tikz
-                            if (tikz_command.contains("node")) {
-
-                                Map<String, Object> result = processCommandGraph(tikz_command);
+                    ArrayList<String> graphEdges = new ArrayList<>();
+                    for (String atom : inputAtomsArray) {
+                        if (atom.contains("aspect")) {
+                            if (atom.contains("node")) {
+                                Map<String, Object> result = processCommandGraph(atom);
                                 if (result != null) {
                                     String tikzCommand = (String) result.get("tikzCommand");
-                                    int frame = (int) result.get("frame");
-                                    out.println(tikzCommand);
+                                    String frame = (String) result.get("frame");
+                                    frameCommandMap.computeIfAbsent(frame, k -> new LinkedList<>()).add(tikzCommand);
                                 }
-
-                                // traduzione connessioni, scrittura comando tikz
-                            } else if (tikz_command.contains("line")) {
-
-                                graph_links.add(tikz_command);
-
+                            } else if (atom.contains("line") || atom.contains("arrow")) {
+                                graphEdges.add(atom);
                             }
-                            // traduzione frecce, scrittura comando tikz
-                            else if (tikz_command.contains("arrow")) {
-
-                                graph_links.add(tikz_command);
-
-                            }
-
-                        } else {
-                            Map<String, Object> result = processCommand(tikz_command);
+                        }
+                    }
+                    for (String atom : graphEdges) {
+                        Map<String, Object> result = processCommandGraph(atom);
+                        if (result != null) {
+                            String tikzCommand = (String) result.get("tikzCommand");
+                            String frame = (String) result.get("frame");
+                            frameCommandMap.computeIfAbsent(frame, k -> new LinkedList<>()).add(tikzCommand);
+                        }
+                    }
+                    frameCommandMap.computeIfAbsent(null, k -> new LinkedList<>()).add("};" + ls);
+                }
+                else {
+                    for (String atom : inputAtomsArray) {
+                        if (atom.contains("aspect")) {
+                            Map<String, Object> result = processCommand(atom);
                             if (result != null) {
                                 String tikzCommand = (String) result.get("tikzCommand");
                                 String frame = (String) result.get("frame");
-                                if (frame == null)
-                                    System.err.println("nullo");
-                                else {
-                                    System.err.println(frame);
-                                }
-                                out.println(tikzCommand);
+                                frameCommandMap.computeIfAbsent(frame, k -> new LinkedList<>()).add(tikzCommand);
+                            }
+                            else{
+                                System.err.println("ASPECT command not found: " + atom);
                             }
                         }
                     }
                 }
 
-                if (graph) {
+                List<String> tikzCommandsForNullFrame = frameCommandMap.get(null);
 
-                    for (String tikz_command : graph_links) {
-                        Map<String, Object> result = processCommandGraph(tikz_command);
-                        if (result != null) {
-                            String tikzCommand = (String) result.get("tikzCommand");
-                            int frame = (int) result.get("frame");
-                            out.println(tikzCommand);
-                        }
+                for (Map.Entry<String, List<String>> entry : frameCommandMap.entrySet()) {
+                    if (entry.getKey() == null && !(frameCommandMap.size() == 1)) {
+                        continue;
                     }
-                    out.println("};" + ls);
-                }
 
-                // stampa footer documento
-                if (merge) {
-                    out.println("\\end{tikzpicture}");
+                    String filename = ASPECT.file_out_prefix + name + "_" + fn + ".tex";
+                    File file = new File(filename);
+                    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file)));
 
-                } else if (free) {
-                    out.println("\\end{tikzpicture}" + ls);
-                    out.println(after);
-                }
-                else {
-                    out.println("\\end{tikzpicture}" + ls
-                            //+ "}" + ls
-                            //+ "\\end{figure}" + ls
-                            + "\\end{document}");
-                }
-                // flush e chiusura buffer output
-                out.flush();
-                bw.flush();
-                fw.flush();
 
-                out.close();
-                bw.close();
-                fw.close();
-                fn = fn + 1;
-                System.out.println("File created: " + texname);
+                    // -----------------------------------------------------------------------------------------------
+                    // Latex Header
+                    // -----------------------------------------------------------------------------------------------
 
-                // avvio pdflatex e passaggio del file creato
-                if (!merge && !free) {
-                    ProcessBuilder processBuilderPDF = new ProcessBuilder();
+                    if (merge) {
+                        out.println("\\begin{tikzpicture}" + ls);
+                    } else if (free) {
+                        out.println(before + ls);
+                        out.println("\\begin{tikzpicture}" + ls);
+                    } else {
+                        out.println("\\documentclass[tikz, border=2pt]{standalone}\n" + ls);
+                        if (graph) {
+                            out.println("\\usetikzlibrary{graphs, quotes, graphdrawing}" + ls
+                                    + "\\usegdlibrary{force}" + ls);
+                        }
+                        out.println("\\begin{document}" + ls
+                                + "\\begin{tikzpicture}" + ls);
+                    }
                     if (graph) {
-                        processBuilderPDF.command("lualatex", "-halt-on-error", texname);
+                        out.println("\\graph[spring layout, node distance=2cm and 2cm]{" + ls);
                     }
-                    else {
-                        processBuilderPDF.command("pdflatex", "-halt-on-error", texname);
+
+                    // -----------------------------------------------------------------------------------------------
+                    // Tikzpicture
+                    // -----------------------------------------------------------------------------------------------
+                    List<String> tikzCommandsList = entry.getValue();
+
+                    if (tikzCommandsForNullFrame != null) {
+                        for (String tikzCommand : tikzCommandsForNullFrame) {
+                            out.println("  " + tikzCommand);
+                        }
                     }
-                    Process pdf = processBuilderPDF.start();
-
-
-                    // ottenimento nome pdf e conferma creazione
-                    String pdfname = texname.substring(0, texname.lastIndexOf(".")) + ".pdf";
-                    System.out.println("Building... " + pdfname + "\r");
-                    // attendo fine esecuzione pdf
-                    pdf.waitFor();
-
-                    if(pdf.exitValue() != 0){
-                        InputStream in = pdf.getInputStream();
-                        if (in.available() > 0) {
-                            BufferedReader errread = new BufferedReader(new InputStreamReader(in));
-                            String error = errread.readLine();
-                            do {
-                                System.err.println(error);
-                                error = errread.readLine();
-                            } while (error != null);
-                            System.exit(1);
+                    if (!(frameCommandMap.size() == 1)) {
+                        for (String tikzCommand : tikzCommandsList) {
+                            out.println("  " + tikzCommand);
                         }
                     }
 
-                    System.out.println("File created: " + pdfname + "\r");
-                    // passo a nuova linea
+                    // -----------------------------------------------------------------------------------------------
+                    // Latex Footer
+                    // -----------------------------------------------------------------------------------------------
 
+                    if (merge) {
+                        out.println("\\end{tikzpicture}");
+
+                    } else if (free) {
+                        out.println("\\end{tikzpicture}" + ls);
+                        out.println(after);
+                    } else {
+                        out.println("\\end{tikzpicture}" + ls
+                                + "\\end{document}");
+                    }
+
+                    // flush e chiusura buffer output
+                    out.flush();
+                    out.close();
+
+                    fn += 1;
+                    System.out.println("File created: " + filename);
+
+                    // avvio pdflatex e passaggio del file creato
+                    if (!merge && !free) {
+                        ProcessBuilder processBuilderPDF = new ProcessBuilder();
+                        if (graph) {
+                            processBuilderPDF.command("lualatex", "-halt-on-error", filename);
+                        } else {
+                            processBuilderPDF.command("pdflatex", "-halt-on-error", filename);
+                        }
+                        Process pdf = processBuilderPDF.start();
+                        // ottenimento nome pdf e conferma creazione
+                        String pdfname = filename.substring(0, filename.lastIndexOf(".")) + ".pdf";
+                        System.out.println("Building... " + pdfname + "\r");
+                        // attendo fine esecuzione pdf
+                        pdf.waitFor();
+
+                        if (pdf.exitValue() != 0) {
+                            InputStream in = pdf.getInputStream();
+                            if (in.available() > 0) {
+                                BufferedReader errread = new BufferedReader(new InputStreamReader(in));
+                                String error = errread.readLine();
+                                do {
+                                    System.err.println(error);
+                                    error = errread.readLine();
+                                } while (error != null);
+                                System.exit(1);
+                            }
+                        }
+
+                        System.out.println("File created: " + pdfname + "\r");
+                    }
                 }
-                tikz_commandline = threadIn.readLine();
-
+                inputAtomsString = threadIn.readLine();
             }
 
         } catch (Exception e) {
