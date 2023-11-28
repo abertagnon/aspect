@@ -1,7 +1,4 @@
-import org.apache.commons.lang3.SystemUtils;
-
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.ArrayList;
@@ -9,19 +6,24 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.HashMap;
+import java.util.TreeMap;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.Scanner;
 
 public class TexPdfThNew implements Runnable {
     InputStream input;
+    boolean verbose;
     boolean merge;
     boolean free;
     boolean graph;
-    public static int fn = 1;
+    public static int fn = 0;
     String name;
 
     //definizione dell'input, argomenti in ingresso
-    public TexPdfThNew(InputStream is, String filename, Boolean merge, Boolean free, Boolean graph) {
+    public TexPdfThNew(InputStream is, String filename, boolean verbose, boolean merge, boolean free, boolean graph) {
         this.input = is;
+        this.verbose = verbose;
         this.name = filename;
         this.merge = merge;
         this.free = free;
@@ -31,21 +33,21 @@ public class TexPdfThNew implements Runnable {
     private static Map<String, Object> processCommand(String command) {
 
         Pattern nodePattern =
-                Pattern.compile("aspect_(draw|image|color)node\\((\\d+),(\\d+),(\"[^\"]*\"|\\w+)?(?:,(\\w+))?(?:,(\\d+))?\\)");
+                Pattern.compile("aspect_(draw|image|color)node\\(([0-9]{0,3}),([0-9]{0,3}),(\\w+|\"[^\"]+\")?(?:,(\\w+))?(?:,(\\d+))?\\)");
         Pattern linePattern =
-                Pattern.compile("aspect_(draw|color)line\\((\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+                Pattern.compile("aspect_(draw|color)line\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
         Pattern arcPattern =
-                Pattern.compile("aspect_(draw|color)arc\\((\\d+),(\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+                Pattern.compile("aspect_(draw|color)arc\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
         Pattern arrowPattern =
-                Pattern.compile("aspect_(draw|color)arrow\\((\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+                Pattern.compile("aspect_(draw|color)arrow\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
         Pattern rectanglePattern =
-                Pattern.compile("aspect_(draw|color|fill)rectangle\\((\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+                Pattern.compile("aspect_(draw|color|fill)rectangle\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
         Pattern trianglePattern =
-                Pattern.compile("aspect_(draw|color|fill)triangle\\((\\d+),(\\d+),(\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+                Pattern.compile("aspect_(draw|color|fill)triangle\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
         Pattern circlePattern =
-                Pattern.compile("aspect_(draw|color|fill)circle\\((\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+                Pattern.compile("aspect_(draw|color|fill)circle\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
         Pattern ellipsePattern =
-                Pattern.compile("aspect_(draw|color|fill)ellipse\\((\\d+),(\\d+),(\\d+),(\\d+)(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
+                Pattern.compile("aspect_(draw|color|fill)ellipse\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,([a-zA-Z]+))?(?:,(\\d+))?\\)");
 
         Matcher matcher;
 
@@ -82,13 +84,13 @@ public class TexPdfThNew implements Runnable {
                 if (argument2 == null || argument2.matches("\\d+")) {
                     t = matcher.group(5);
                     result.put("tikzCommand",
-                            String.format("\\draw (%s,%s) node {\\LARGE %s};", x, y, argument1));
+                            String.format("\\draw  (%s,%s) node[text centered, anchor=base, text height=72pt, font=\\fontsize{72}{10}\\selectfont] {%s};", x, y, argument1));
                 } else return null;
                 break;
             case "color":
                 if (argument2 != null && !argument2.matches("\\d+")) {
                     result.put("tikzCommand",
-                            String.format("\\draw [text=%s] (%s,%s) node {\\LARGE %s};", argument2, x, y, argument1));
+                            String.format("\\draw [text=%s] (%s,%s) node[text centered, anchor=base, text height=72pt, font=\\fontsize{72}{10}\\selectfont] {%s};", argument2, x, y, argument1));
                 } else return null;
                 break;
             case "image":
@@ -396,15 +398,31 @@ public class TexPdfThNew implements Runnable {
         return result;
     }
 
+    public class NumericStringComparator implements Comparator<String> {
+        @Override
+        public int compare(String str1, String str2) {
+            if (str1 == null && str2 == null) return 0;
+            else if (str1 == null) return -1;
+            else if (str2 == null) return 1;
+
+            try {
+                int num1 = Integer.parseInt(str1);
+                int num2 = Integer.parseInt(str2);
+                return Integer.compare(num1, num2);
+            } catch (NumberFormatException e) {
+                return str1.compareTo(str2);
+            }
+        }
+    }
+
     public void run() {
         try {
-            // apertura buffer in ingresso
-            BufferedReader threadIn = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+            String ls = System.getProperty("line.separator");
+            System.out.println("+++> ASPECT: Reading from stdin..." + ls);
 
             StringBuilder before = new StringBuilder();
             StringBuilder after = new StringBuilder();
             String line;
-            String ls = System.getProperty("line.separator");
 
             if (free) {
 
@@ -424,19 +442,22 @@ public class TexPdfThNew implements Runnable {
 
             }
 
-            String inputAtomsString = threadIn.readLine();
-            System.out.println(inputAtomsString);
-
-            if (inputAtomsString == null){
-                System.err.println("ASPECT atoms not found. Nothing to do !");
-                System.err.println("Please check the output of the ASP solver.");
-                System.exit(1);
-            }
-
-            while (inputAtomsString != null) {
-                Map<String, List<String>> frameCommandMap = new HashMap<>();
-
-                String[] inputAtomsArray = inputAtomsString.split(" ");
+            Scanner scanner = new Scanner(input);
+            boolean isValidInput = false;
+            while (scanner.hasNextLine()) {
+                String inputAtomsString = scanner.nextLine();
+                if (verbose) System.out.println(inputAtomsString);
+                Map<String, List<String>> frameCommandMap = new TreeMap<>(new NumericStringComparator());
+                Pattern pattern = Pattern.compile("aspect_\\w+\\((?:\"[^\"]*\"|[^)\"]*)*\\)");
+                Matcher matcher = pattern.matcher(inputAtomsString);
+                ArrayList<String> matches = new ArrayList<>();
+                while (matcher.find()) {
+                    String match = matcher.group();
+                    matches.add(match);
+                }
+                if(matches.isEmpty()) continue;
+                isValidInput = true;
+                String[] inputAtomsArray = matches.toArray(new String[0]);
                 // order is useful in graph mode so when I print multiple
                 // solutions of the same problem the layout is the same
                 Arrays.sort(inputAtomsArray);
@@ -444,17 +465,15 @@ public class TexPdfThNew implements Runnable {
                 if (graph) {
                     ArrayList<String> graphEdges = new ArrayList<>();
                     for (String atom : inputAtomsArray) {
-                        if (atom.contains("aspect")) {
-                            if (atom.contains("node")) {
-                                Map<String, Object> result = processCommandGraph(atom);
-                                if (result != null) {
-                                    String tikzCommand = (String) result.get("tikzCommand");
-                                    String frame = (String) result.get("frame");
-                                    frameCommandMap.computeIfAbsent(frame, k -> new LinkedList<>()).add(tikzCommand);
-                                }
-                            } else if (atom.contains("line") || atom.contains("arrow")) {
-                                graphEdges.add(atom);
+                        if (atom.contains("node")) {
+                            Map<String, Object> result = processCommandGraph(atom);
+                            if (result != null) {
+                                String tikzCommand = (String) result.get("tikzCommand");
+                                String frame = (String) result.get("frame");
+                                frameCommandMap.computeIfAbsent(frame, k -> new LinkedList<>()).add(tikzCommand);
                             }
+                        } else if (atom.contains("line") || atom.contains("arrow")) {
+                            graphEdges.add(atom);
                         }
                     }
                     for (String atom : graphEdges) {
@@ -469,16 +488,17 @@ public class TexPdfThNew implements Runnable {
                 }
                 else {
                     for (String atom : inputAtomsArray) {
-                        if (atom.contains("aspect")) {
-                            Map<String, Object> result = processCommand(atom);
-                            if (result != null) {
-                                String tikzCommand = (String) result.get("tikzCommand");
-                                String frame = (String) result.get("frame");
-                                frameCommandMap.computeIfAbsent(frame, k -> new LinkedList<>()).add(tikzCommand);
-                            }
-                            else{
-                                System.err.println("ASPECT command not found: " + atom);
-                            }
+                        Map<String, Object> result = processCommand(atom);
+                        if (result != null) {
+                            String tikzCommand = (String) result.get("tikzCommand");
+                            String frame = (String) result.get("frame");
+                            frameCommandMap.computeIfAbsent(frame, k -> new LinkedList<>()).add(tikzCommand);
+                        }
+                        else {
+                            System.err.println("***> ASPECT ERROR: command not found: " + atom + ls);
+                            System.err.println("     Remember that numerical values (coordinates) " + ls +
+                                               "     must be within the range 000-999 as required " + ls +
+                                               "     also by the TikZ language" + ls);
                         }
                     }
                 }
@@ -489,11 +509,10 @@ public class TexPdfThNew implements Runnable {
                     if (entry.getKey() == null && !(frameCommandMap.size() == 1)) {
                         continue;
                     }
-
-                    String filename = ASPECT.file_out_prefix + name + "_" + fn + ".tex";
+                    fn += 1;
+                    String filename = name + "_" + fn + ".tex";
                     File file = new File(filename);
                     PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file)));
-
 
                     // -----------------------------------------------------------------------------------------------
                     // Latex Header
@@ -505,7 +524,7 @@ public class TexPdfThNew implements Runnable {
                         out.println(before + ls);
                         out.println("\\begin{tikzpicture}" + ls);
                     } else {
-                        out.println("\\documentclass[tikz, border=2pt]{standalone}\n" + ls);
+                        out.println("\\documentclass[tikz, border=2pt]{standalone}" + ls);
                         if (graph) {
                             out.println("\\usetikzlibrary{graphs, quotes, graphdrawing}" + ls
                                     + "\\usegdlibrary{force}" + ls);
@@ -552,10 +571,12 @@ public class TexPdfThNew implements Runnable {
                     out.flush();
                     out.close();
 
-                    fn += 1;
-                    System.out.println("File created: " + filename);
+                    System.out.println("+++> ASPECT: File created " + filename + ls);
 
-                    // avvio pdflatex e passaggio del file creato
+                    // -----------------------------------------------------------------------------------------------
+                    // Compiling: pdflatex, lualatex
+                    // -----------------------------------------------------------------------------------------------
+
                     if (!merge && !free) {
                         ProcessBuilder processBuilderPDF = new ProcessBuilder();
                         if (graph) {
@@ -564,10 +585,8 @@ public class TexPdfThNew implements Runnable {
                             processBuilderPDF.command("pdflatex", "-halt-on-error", filename);
                         }
                         Process pdf = processBuilderPDF.start();
-                        // ottenimento nome pdf e conferma creazione
                         String pdfname = filename.substring(0, filename.lastIndexOf(".")) + ".pdf";
-                        System.out.println("Building... " + pdfname + "\r");
-                        // attendo fine esecuzione pdf
+                        System.out.println("+++> ASPECT: Building " + pdfname);
                         pdf.waitFor();
 
                         if (pdf.exitValue() != 0) {
@@ -582,12 +601,16 @@ public class TexPdfThNew implements Runnable {
                                 System.exit(1);
                             }
                         }
-
-                        System.out.println("File created: " + pdfname + "\r");
+                        System.out.println("+++> ASPECT: File created " + pdfname + ls);
                     }
                 }
-                inputAtomsString = threadIn.readLine();
             }
+            if (!isValidInput){
+                System.err.println("***> ASPECT ERROR: atoms not found. Nothing to do !");
+                System.err.println("     Please check the output of the ASP solver." + ls);
+                // System.exit(1);
+            }
+            scanner.close();
 
         } catch (Exception e) {
             e.printStackTrace();

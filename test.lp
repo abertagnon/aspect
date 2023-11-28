@@ -38,7 +38,7 @@ aspect_drawnode(5,4,X,2) :- val2(X).
 aspect_colornode(5,5,"color1",red,1). 
 aspect_colornode(5,6,color2,blue,2). 
 aspect_colornode(5,7,1,green,1). 
-aspect_imagenode(5,8,"check.png",10,2).
+aspect_imagenode(5,8,"test.png",10,2).
 
 aspect_drawline(10,1,15,1).
 aspect_colorline(10,2,15,2,red).

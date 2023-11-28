@@ -6,7 +6,7 @@
 
     <groupId>org.unife</groupId>
     <artifactId>aspect</artifactId>
-    <version>0.1.2</version>
+    <version>0.1.3a</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -44,7 +44,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>ASPECT</mainClass>
+                            <mainClass>ASPECT_H</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

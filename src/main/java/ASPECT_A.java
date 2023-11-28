@@ -7,7 +7,21 @@ public class ASPECT_A {
     public static String file_out_prefix = "aspect_out_";
 
     public static void main(String[] args) {
-        System.out.println("***** ASPECT START *****");
+        // System.out.println("***** ASPECT START *****");
+        System.out.println("\n###############################################################");
+        String asciiTitle =
+                "                  _   ___ ___ ___ ___ _____ \n" +
+                "                 /_\\ / __| _ \\ __/ __|_   _|\n" +
+                "                / _ \\\\__ \\  _/ _| (__  | |  \n" +
+                "               /_/ \\_\\___/_| |___\\___| |_|  \n";
+        System.out.println(asciiTitle);
+        System.out.println(" ASPECT: Answer Set rePresentation as vEctor graphiCs in laTex ");
+        System.out.println("        https://github.com/abertagnon/aspect -- v0.1.3a        ");
+        String yellowColor = "\u001B[33m";
+        String resetColor = "\u001B[0m";
+        String debugText = " ************** TEST ONLY -- NOT FOR PRODUCTION ************** ";
+        System.out.println(yellowColor + debugText + resetColor);
+        System.out.println("###############################################################\n");
         Options options = new Options();
 
         // merge mode
@@ -113,7 +127,7 @@ public class ASPECT_A {
             PipedInputStream is = new PipedInputStream();
             os.connect(is);
             ClingoTh cl = new ClingoTh(os, arguments);
-            TexPdfThNew tp = new TexPdfThNew(is, name, merge, free, graph);
+            TexPdfThNew tp = new TexPdfThNew(is, name, false, merge, free, graph);
 
             Thread clingo = new Thread(cl);
             Thread texpdf = new Thread(tp);
@@ -144,12 +158,12 @@ public class ASPECT_A {
                     if (merge) {
                         out.println("\\begin{frame}" + ls
                                 + "\\resizebox{" + resizeFactor + "em}{" + resizeFactor + "em}{" + ls
-                                + "\\input{" + file_out_prefix + name + j + "}" + ls
+                                + "\\input{" + file_out_prefix + name + "_" + j + "}" + ls
                                 + "}" + ls
                                 + "\\end{frame}" + ls
                         );
                     } else {
-                        out.println("\\input{" + file_out_prefix + name + j + "}" + ls);
+                        out.println("\\input{" + file_out_prefix + name + "_" + j + "}" + ls);
                     }
                 }
                 out.println("\\end{document}");
