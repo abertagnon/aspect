@@ -27,44 +27,58 @@ public class ASPECT_H {
                 .required(false)
                 .build());
         options.addOption(Option.builder("v").longOpt("verbose")
-                .desc("enable verbose mode (shows on the screen all ASPECT atomic formulas received as input)")
+                .desc("verbose output (shows on the screen all ASPECT atomic formulas received as input)")
+                .hasArg(false)
+                .required(false)
+                .build());
+        options.addOption(Option.builder("nobuild")
+                .desc("disables automatic building (via pdflatex or lualatex) of the files created")
+                .hasArg(false)
+                .required(false)
+                .build());
+        options.addOption(Option.builder("h").longOpt("help")
+                .desc("shows ASPECT command line options")
                 .hasArg(false)
                 .required(false)
                 .build());
 
         // merge mode
-        options.addOption(Option.builder("m").longOpt("merge")
-                .desc("enable merge mode")
+        options.addOption(Option.builder("b").longOpt("beamer")
+                .desc("enable beamer mode")
                 .hasArg(false)
                 .required(false)
                 .build());
+        options.addOption(Option.builder("r").longOpt("resize")
+                .desc("set resize parameter for beamer mode, % of \\textwidth, from 0 to 1 (default 1)")
+                .hasArg(true)
+                .required(false)
+                .build());
+
         // free mode
         options.addOption(Option.builder("f").longOpt("free")
                 .desc("enable free mode")
                 .hasArg(false)
                 .required(false)
                 .build());
-        // graph mode
-        options.addOption(Option.builder("g").longOpt("graph")
-                .desc("enable graph mode")
-                .hasArg(false)
-                .required(false)
-                .build());
-        // resize option
-        options.addOption(Option.builder("r").longOpt("resize")
-                .desc("set resize parameter for merge mode (default 5)")
+        options.addOption(Option.builder("before")
+                .desc("set before file used in free mode (default before.tex)")
                 .hasArg(true)
                 .required(false)
                 .build());
+        options.addOption(Option.builder("after")
+                .desc("set after file used in free mode (default after.tex)")
+                .hasArg(true)
+                .required(false)
+                .build());
+
         // animate mode
         options.addOption(Option.builder("a").longOpt("animate")
                 .desc("enable animate mode")
                 .hasArg(false)
                 .required(false)
                 .build());
-        // speed option
         options.addOption(Option.builder("s").longOpt("speed")
-                .desc("set speed parameter for animate mode (default 5)")
+                .desc("set speed parameter for animate mode (default 1)")
                 .hasArg(true)
                 .required(false)
                 .build());
@@ -74,15 +88,20 @@ public class ASPECT_H {
 
         boolean merge = false;
         boolean free = false;
-        boolean graph = false;
         boolean animate = false;
         boolean verbose = false;
-        String resizeFactor = "5";
-        String speedFactor = "5";
+
+        String resizeFactor = "1";
+        String speedFactor = "1";
         String outputFileName = "aspect_output";
 
         try {
             CommandLine cmd = parser.parse(options, args);
+
+            if (cmd.hasOption("h")) {
+                formatter.printHelp("ASPECT [options]", options);
+                System.exit(1);
+            }
 
             if(cmd.hasOption("o")) {
                 outputFileName = cmd.getOptionValue("o");
@@ -90,35 +109,49 @@ public class ASPECT_H {
             if(cmd.hasOption("v")) {
                 verbose = true;
             }
+            if(cmd.hasOption("nobuild")) {
+                TexPdfThNew.pdfBuild = false;
+            }
 
-            if (cmd.hasOption("m")) {
+            if (cmd.hasOption("b")) {
                 merge = true;
                 if (cmd.hasOption("r")) {
                     resizeFactor = cmd.getOptionValue("r");
                 }
             }
+
             if (cmd.hasOption("f")) {
                 free = true;
+                if (cmd.hasOption("before")) {
+                    TexPdfThNew.beforeFilename = cmd.getOptionValue("before");
+                }
+                if (cmd.hasOption("after")) {
+                    TexPdfThNew.afterFilename = cmd.getOptionValue("after");
+                }
             }
-            if (cmd.hasOption("g")) {
-                graph = true;
-            }
+
             if (cmd.hasOption("a")) {
                 animate = true;
                 if (cmd.hasOption("s")) {
                     speedFactor = cmd.getOptionValue("s");
                 }
             }
-            
-            // Special conditions on options
-            if(merge && free){
-                throw new ParseException("*** ASPECT ERROR: Merge mode and Free mode cannot be used together.");
+
+            if (merge && animate) {
+                throw new ParseException("***> ASPECT ERROR: animate and beamer mode cannot be used together.");
             }
+
             if(cmd.hasOption("r") && !merge){
-                System.err.println("*** ASPECT WARNING: Resize option only used in merge mode. I'll ignore it.");
+                System.err.println("***> ASPECT WARNING: resize option only used in beamer mode. I'll ignore it.");
             }
             if(cmd.hasOption("s") && !animate){
-                System.err.println("*** ASPECT WARNING: Speed option only used in animate mode. I'll ignore it.");
+                System.err.println("***> ASPECT WARNING: speed option only used in animate mode. I'll ignore it.");
+            }
+            if(cmd.hasOption("before") && !free){
+                System.err.println("***> ASPECT WARNING: before option only used in free mode. I'll ignore it.");
+            }
+            if(cmd.hasOption("after") && !free){
+                System.err.println("***> ASPECT WARNING: after option only used in free mode. I'll ignore it.");
             }
 
         } catch (ParseException e) {
@@ -128,136 +161,69 @@ public class ASPECT_H {
         }
 
         try {
-            TexPdfThNew tp = new TexPdfThNew(System.in, outputFileName, verbose, merge, free, graph);
+            TexPdfThNew tp = new TexPdfThNew(System.in, outputFileName, verbose, merge, free, resizeFactor);
             Thread texpdf = new Thread(tp);
 
             texpdf.start();
             texpdf.join();
 
-            if (merge || free) {
-                int filenumber;
-                filenumber = TexPdfThNew.fn; // associare numero di file da thread texpdf
-                if (filenumber != 0) {
-                    String mergedname = outputFileName + "_merged.tex";
-                    File merged = new File(mergedname);
-                    FileWriter fw = new FileWriter(merged);
-                    BufferedWriter bw = new BufferedWriter(fw);
-                    PrintWriter out = new PrintWriter(bw);
+            if (merge) {
+                int fileNumber = TexPdfThNew.files.isEmpty() ? 0 : TexPdfThNew.files.lastKey();
+                if (fileNumber != 0) {
+                    int frameNumber = TexPdfThNew.files.get(fileNumber);
+                    String mergedFilename = outputFileName + "_merged.tex";
+                    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(mergedFilename)));
+
                     out.println("\\documentclass{beamer}" + ls
                             + "\\usepackage{tikz}" + ls
-                            + "\\usepackage{graphicx}" + ls);
-                    if (graph) {
+                            + "\\usepackage{graphicx}" + ls
+                            + "\\usepackage{xcolor}");
+
+                    if (TexPdfThNew.graph) {
                         out.println("\\usetikzlibrary{graphs,quotes,graphdrawing}" + ls
                                 + "\\usegdlibrary{force}" + ls);
                     }
+
                     out.println("\\begin{document}" + ls);
-                    for (int j = 1; j <= filenumber; j++) {
-                        if (merge) {
-                            out.println("\\begin{frame}" + ls
-                                    + "\\resizebox{" + resizeFactor + "em}{" + resizeFactor + "em}{" + ls
-                                    + "\\input{" + outputFileName + "_" + j + "}" + ls
-                                    + "}" + ls
-                                    + "\\end{frame}" + ls
-                            );
-                        } else {
-                            out.println("\\input{" + outputFileName + "_" + j + "}" + ls);
-                        }
-                    }
+
+                    for (int j = 1; j <= fileNumber; j++)
+                        if (frameNumber == 1) out.println("\\input{" + outputFileName + "_" + j + "}" + ls);
+                        else for (int i = 1; i <= frameNumber; i++)
+                            out.println("\\input{" + outputFileName + "_" + j + "_" + i + "}" + ls);
+
                     out.println("\\end{document}");
+
                     out.flush();
-                    bw.flush();
-                    fw.flush();
-
                     out.close();
-                    bw.close();
-                    fw.close();
 
-                    System.out.println("+++> ASPECT (MERGE|FREE): File created " + mergedname);
-
-                    ProcessBuilder processBuilderPDF = new ProcessBuilder();
-                    if (graph) {
-                        processBuilderPDF.command("lualatex", "-halt-on-error", mergedname);
-                    } else {
-                        processBuilderPDF.command("pdflatex", "-halt-on-error", mergedname);
-                    }
-                    processBuilderPDF.redirectOutput(ProcessBuilder.Redirect.PIPE);
-                    Process mpdf = processBuilderPDF.start();
-
-                    String mpdfname = mergedname.substring(0, mergedname.lastIndexOf(".")) + ".pdf";
-                    System.out.println("+++> ASPECT (MERGE|FREE): Building " + mpdfname);
-                    mpdf.waitFor();
-
-                    if (mpdf.exitValue() != 0) {
-                        InputStream in = mpdf.getInputStream();
-                        if (in.available() > 0) {
-                            BufferedReader errread = new BufferedReader(new InputStreamReader(in));
-                            String error = errread.readLine();
-                            do {
-                                System.err.println(error);
-                                error = errread.readLine();
-                            } while (error != null);
-                            System.exit(1);
-                        }
-                    }
-                    System.out.println("+++> ASPECT (MERGE|FREE): File created " + mpdfname + ls);
+                    System.out.println("+++> ASPECT: File created " + mergedFilename);
+                    TexPdfThNew.buildLatex(mergedFilename);
                 }
             }
 
             if (animate) {
-                int filenumber = TexPdfThNew.fn;
+                int filenumber = TexPdfThNew.files.isEmpty() ? 0 : TexPdfThNew.files.lastKey();
                 if (filenumber != 0) {
                     String strfn = String.valueOf(filenumber);
-                    String animatedname = outputFileName + "_animated.tex";
-                    File animated = new File(animatedname);
-                    FileWriter fw = new FileWriter(animated);
-                    BufferedWriter bw = new BufferedWriter(fw);
-                    PrintWriter out = new PrintWriter(bw);
+
+                    String animatedFilename = outputFileName + "_animated.tex";
+                    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(animatedFilename)));
+
                     out.println("\\documentclass{beamer}" + ls
                             + "\\usepackage{animate}" + ls
                             + "\\begin{document}" + ls
                             + "\\begin{frame}" + ls
-                            + "\\frametitle{Frame title}" + ls
-                            + "\\framesubtitle{Frame subtitle}" + ls
                             + "\\begin{center}" + ls
                             + "\\animategraphics[autoplay, loop, width=\\linewidth]{" + speedFactor + "}{" + outputFileName + "_}{1}{" + strfn + "}" + ls
                             + "\\end{center}" + ls
                             + "\\end{frame}" + ls
                             + "\\end{document}");
+
                     out.flush();
-                    bw.flush();
-                    fw.flush();
-
                     out.close();
-                    bw.close();
-                    fw.close();
 
-                    System.out.println("+++> ASPECT (ANIMATE): File created " + animatedname);
-                    ProcessBuilder processBuilderPDF = new ProcessBuilder();
-                    processBuilderPDF.command("pdflatex", "-halt-on-error", animatedname);
-                    processBuilderPDF.redirectOutput(ProcessBuilder.Redirect.PIPE);
-                    Process apdf = processBuilderPDF.start();
-
-                    String apdfname = animatedname.substring(0, animatedname.lastIndexOf(".")) + ".pdf";
-                    System.out.println("+++> ASPECT (ANIMATE): Building " + apdfname);
-                    apdf.waitFor();
-
-                    if (apdf.exitValue() != 0) {
-                        InputStream in = apdf.getInputStream();
-                        if (in.available() > 0) {
-                            BufferedReader errread = new BufferedReader(new InputStreamReader(in));
-                            String error = errread.readLine();
-                            do {
-                                System.err.println(error);
-                                error = errread.readLine();
-                            } while (error != null);
-                            System.exit(1);
-                        }
-                    }
-                    System.out.println("+++> ASPECT (ANIMATE): File created " + apdfname + ls);
                 }
             }
-
-            
 
         } catch (Exception e) {
             e.printStackTrace();
