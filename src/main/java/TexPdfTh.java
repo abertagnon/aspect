@@ -1,47 +1,587 @@
 import java.io.*;
-import java.util.Arrays;
+import java.util.List;
+import java.util.LinkedList;
 import java.util.ArrayList;
-import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.TreeMap;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Scanner;
 
-public class TexPdfTh implements Runnable {
+public class TexPdfThNew implements Runnable {
     InputStream input;
+    String name;
+    boolean verbose;
     boolean merge;
     boolean free;
-    boolean graph;
-    public static int fn = 1;
-    String name;
+    String resizeFactor;
+    static boolean pdfBuild = true;
+    static boolean graph;
+    // <fileId, frameNumber>
+    static TreeMap<Integer, Integer> files = new TreeMap<>();
+    static String beforeFilename = "before.tex";
+    static String afterFilename = "after.tex";
 
     //definizione dell'input, argomenti in ingresso
-    public TexPdfTh(InputStream is, String filename, Boolean merge, Boolean free, Boolean graph) {
+    public TexPdfThNew(InputStream is, String filename, boolean verbose, boolean merge, boolean free, String resizeFactor) {
         this.input = is;
         this.name = filename;
+        this.verbose = verbose;
         this.merge = merge;
         this.free = free;
-        this.graph = graph;
+        this.resizeFactor = resizeFactor;
+    }
+
+    private static Map<String, Object> processCommand(String command) {
+
+        Pattern nodePattern =
+                Pattern.compile("aspect_(draw|image|color)node\\(([0-9]{0,3}),([0-9]{0,3}),(\\w+|\"[^\"]+\")?(?:,(\\w+|\"[^\"]+\"))?(?:,(\\w+))?(?:,(\\d+))?\\)");
+        Pattern linePattern =
+                Pattern.compile("aspect_(draw|color)line\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,(\\w+|\"[^\"]+\"))?(?:,(\\d+))?\\)");
+        Pattern arcPattern =
+                Pattern.compile("aspect_(draw|color)arc\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,(\\w+|\"[^\"]+\"))?(?:,(\\d+))?\\)");
+        Pattern arrowPattern =
+                Pattern.compile("aspect_(draw|color)arrow\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,(\\w+|\"[^\"]+\"))?(?:,(\\d+))?\\)");
+        Pattern rectanglePattern =
+                Pattern.compile("aspect_(draw|color|fill)rectangle\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,(\\w+|\"[^\"]+\"))?(?:,(\\d+))?\\)");
+        Pattern trianglePattern =
+                Pattern.compile("aspect_(draw|color|fill)triangle\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,(\\w+|\"[^\"]+\"))?(?:,(\\d+))?\\)");
+        Pattern circlePattern =
+                Pattern.compile("aspect_(draw|color|fill)circle\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,(\\w+|\"[^\"]+\"))?(?:,(\\d+))?\\)");
+        Pattern ellipsePattern =
+                Pattern.compile("aspect_(draw|color|fill)ellipse\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,(\\w+|\"[^\"]+\"))?(?:,(\\d+))?\\)");
+
+        Matcher matcher;
+
+        if ((matcher = nodePattern.matcher(command)).matches()) {
+            return processNode(matcher);
+        } else if ((matcher = linePattern.matcher(command)).matches()) {
+            return processLine(matcher);
+        } else if ((matcher = arcPattern.matcher(command)).matches()) {
+            return processArc(matcher);
+        } else if ((matcher = arrowPattern.matcher(command)).matches()) {
+            return processArrow(matcher);
+        } else if ((matcher = rectanglePattern.matcher(command)).matches()) {
+            return processRectangle(matcher);
+        } else if ((matcher = trianglePattern.matcher(command)).matches()) {
+            return processTriangle(matcher);
+        } else if ((matcher = circlePattern.matcher(command)).matches()) {
+            return processCircle(matcher);
+        } else if ((matcher = ellipsePattern.matcher(command)).matches()) {
+            return processEllipse(matcher);
+        }
+        return null;
+    }
+
+    private static Map<String, Object> processNode(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "color" or "image"
+        String x = matcher.group(2);
+        String y = matcher.group(3);
+        String argument1 = matcher.group(4).replace("\"", "");   // text or image path
+        String argument2 = matcher.group(5);  // text size or color (color) width (image) or text size or frame (draw)
+        String argument3 = matcher.group(6);
+        String t = matcher.group(7);
+
+        switch (commandType) {
+            case "draw":
+                if (argument2 == null || argument2.matches("\\d+")) {
+                    t = matcher.group(5);
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) node[text centered] {%s};", x, y, argument1));
+
+                } else if (argument2.matches("\"?(tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)\"?") && (argument3 == null || argument3.matches("\\d+"))) {
+                    argument2 = argument2.replace("\"", "");
+                    t = matcher.group(6);
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) node[text centered, font=\\%s] {%s};", x, y, argument2, argument1));
+                } else return null;
+                break;
+            case "color":
+                if (argument2 == null) return null;
+                if (argument2.matches("\"?(tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)\"?") && argument3.matches("\\w+")) {
+                    argument2 = argument2.replace("\"", "");
+                    argument3 = argument3.replace("\"", "");
+                    result.put("tikzCommand",
+                            String.format("\\draw [text=%s] (%s,%s) node[text centered, font=\\%s] {%s};", argument3, x, y, argument2, argument1));
+                } else if (argument2.matches("\\w+") && (argument3 == null || argument3.matches("\\d+"))){
+                    t = matcher.group(6);
+                    argument2 = argument2.replace("\"", "");
+                    result.put("tikzCommand",
+                            String.format("\\draw [text=%s] (%s,%s) node[text centered] {%s};", argument2, x, y, argument1));
+                } else return null;
+                break;
+            case "image":
+                if (argument2 != null && argument2.matches("\\d+") && (argument3 == null || argument3.matches("\\d+"))) {
+                    t = matcher.group(6);
+                    result.put("tikzCommand",
+                            String.format("\\node [inner sep=0pt] (img) at (%s,%s) {\\includegraphics[width=%s px]{%s}};", x, y, argument2, argument1));
+                } else return null;
+                break;
+        }
+        result.put("frame", t);
+        return result;
+    }
+
+    private static Map<String, Object> processLine(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "color"
+        String x1 = matcher.group(2);
+        String y1 = matcher.group(3);
+        String x2 = matcher.group(4);
+        String y2 = matcher.group(5);
+        String color = matcher.group(6);
+        String t = matcher.group(7);
+        result.put("frame", t);
+        if (commandType.equals("draw")) {
+            if (color == null) {
+                result.put("tikzCommand",
+                        String.format("\\draw (%s,%s) -- (%s,%s);", x1, y1, x2, y2));
+            } else return null;
+        }
+        else if(commandType.equals("color")) {
+            if (color != null) {
+                color = color.replace("\"", "");
+                result.put("tikzCommand",
+                        String.format("\\draw [color=%s] (%s,%s) -- (%s,%s);", color, x1, y1, x2, y2));
+            } else return null;
+        }
+        return result;
+    }
+
+    private static Map<String, Object> processArc(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "color"
+        String x1 = matcher.group(2);
+        String y1 = matcher.group(3);
+        String a1 = matcher.group(4);
+        String a2 = matcher.group(5);
+        String r1 = matcher.group(6);
+        String color = matcher.group(7);
+        String t = matcher.group(8);
+        result.put("frame", t);
+        if (commandType.equals("draw")) {
+            if (color == null) {
+                result.put("tikzCommand",
+                        String.format("\\draw (%s,%s) arc (%s:%s:%s);", x1, y1, a1, a2, r1));
+            } else return null;
+        }
+        else if(commandType.equals("color")) {
+            if (color != null) {
+                color = color.replace("\"", "");
+                result.put("tikzCommand",
+                        String.format("\\draw [color=%s] (%s,%s) arc (%s:%s:%s);", color, x1, y1, a1, a2, r1));
+            } else return null;
+        }
+        return result;
+    }
+
+    private static Map<String, Object> processArrow(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "color"
+        String x1 = matcher.group(2);
+        String y1 = matcher.group(3);
+        String x2 = matcher.group(4);
+        String y2 = matcher.group(5);
+        String color = matcher.group(6);
+        String t = matcher.group(7);
+        result.put("frame", t);
+        if (commandType.equals("draw")) {
+            if (color == null) {
+                result.put("tikzCommand",
+                        String.format("\\draw [->] (%s,%s) -- (%s,%s);", x1, y1, x2, y2));
+            } else return null;
+        }
+        else if(commandType.equals("color")) {
+            if (color != null) {
+                color = color.replace("\"", "");
+                result.put("tikzCommand",
+                        String.format("\\draw [->, color=%s] (%s,%s) -- (%s,%s);", color, x1, y1, x2, y2));
+            } else return null;
+        }
+        return result;
+    }
+
+    private static Map<String, Object> processRectangle(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "color" or "fill"
+        String x1 = matcher.group(2);
+        String y1 = matcher.group(3);
+        String x2 = matcher.group(4);
+        String y2 = matcher.group(5);
+        String color = matcher.group(6);
+        String t = matcher.group(7);
+        result.put("frame", t);
+        switch (commandType) {
+            case "draw":
+                if (color == null) {
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) rectangle (%s,%s);", x1, y1, x2, y2));
+                } else return null;
+                break;
+            case "color":
+                if (color != null && !color.matches("\\d+")) {
+                    color = color.replace("\"", "");
+                    result.put("tikzCommand",
+                            String.format("\\draw [color=%s] (%s,%s) rectangle (%s,%s);", color, x1, y1, x2, y2));
+                } else return null;
+                break;
+            case "fill":
+                if (color != null && !color.matches("\\d+")) {
+                    color = color.replace("\"", "");
+                    result.put("tikzCommand",
+                            String.format("\\fill [%s] (%s,%s) rectangle (%s,%s);", color, x1, y1, x2, y2));
+                } else return null;
+                break;
+        }
+        return result;
+    }
+
+    private static Map<String, Object> processTriangle(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "color" or "fill"
+        String x1 = matcher.group(2);
+        String y1 = matcher.group(3);
+        String x2 = matcher.group(4);
+        String y2 = matcher.group(5);
+        String x3 = matcher.group(6);
+        String y3 = matcher.group(7);
+        String color = matcher.group(8);
+        String t = matcher.group(9);
+        result.put("frame", t);
+        switch (commandType) {
+            case "draw":
+                if (color == null) {
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) -- (%s,%s) -- (%s,%s) -- cycle;", x1, y1, x2, y2, x3, y3));
+                } else return null;
+                break;
+            case "color":
+                if (color != null && !color.matches("\\d+")) {
+                    color = color.replace("\"", "");
+                    result.put("tikzCommand",
+                            String.format("\\draw [color=%s] (%s,%s) -- (%s,%s) -- (%s,%s) -- cycle;", color, x1, y1, x2, y2, x3, y3));
+                } else return null;
+                break;
+            case "fill":
+                if (color != null && !color.matches("\\d+")) {
+                    color = color.replace("\"", "");
+                    result.put("tikzCommand",
+                            String.format("\\fill [%s] (%s,%s) -- (%s,%s) -- (%s,%s) -- cycle;", color, x1, y1, x2, y2, x3, y3));
+                } else return null;
+                break;
+        }
+        return result;
+    }
+
+    private static Map<String, Object> processCircle(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "color" or "fill"
+        String x1 = matcher.group(2);
+        String y1 = matcher.group(3);
+        String r = matcher.group(4);
+        String color = matcher.group(5);
+        String t = matcher.group(6);
+        result.put("frame", t);
+        switch (commandType) {
+            case "draw":
+                if (color == null) {
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) circle (%s);", x1, y1, r));
+                } else return null;
+                break;
+            case "color":
+                if (color != null && !color.matches("\\d+")) {
+                    color = color.replace("\"", "");
+                    result.put("tikzCommand",
+                            String.format("\\draw [color=%s] (%s,%s) circle (%s);", color, x1, y1, r));
+                } else return null;
+                break;
+            case "fill":
+                if (color != null && !color.matches("\\d+")) {
+                    color = color.replace("\"", "");
+                    result.put("tikzCommand",
+                            String.format("\\fill [%s] (%s,%s) circle (%s);", color, x1, y1, r));
+                } else return null;
+                break;
+        }
+        return result;
+    }
+
+    private static Map<String, Object> processEllipse(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "color" or "fill"
+        String x1 = matcher.group(2);
+        String y1 = matcher.group(3);
+        String r1 = matcher.group(4);
+        String r2 = matcher.group(5);
+        String color = matcher.group(6);
+        String t = matcher.group(7);
+        result.put("frame", t);
+        switch (commandType) {
+            case "draw":
+                if (color == null) {
+                    result.put("tikzCommand",
+                            String.format("\\draw (%s,%s) ellipse (%s and %s);", x1, y1, r1, r2));
+                } else return null;
+                break;
+            case "color":
+                if (color != null && !color.matches("\\d+")) {
+                    color = color.replace("\"", "");
+                    result.put("tikzCommand",
+                            String.format("\\draw [color=%s] (%s,%s) ellipse (%s and %s);", color, x1, y1, r1, r2));
+                } else return null;
+                break;
+            case "fill":
+                if (color != null && !color.matches("\\d+")) {
+                    color = color.replace("\"", "");
+                    result.put("tikzCommand",
+                            String.format("\\fill [%s] (%s,%s) ellipse (%s and %s);", color, x1, y1, r1, r2));
+                } else return null;
+                break;
+        }
+        return result;
+    }
+
+    private static Map<String, Object> processCommandGraph(String command) {
+
+        Pattern nodePattern = Pattern.compile("aspect_graph(draw|color)node\\(([^,]+)(?:,([^,]+))?(?:,([^,]+))?(?:,(\\d+))?\\)");
+        Pattern edgePattern = Pattern.compile("aspect_graph(draw|quote)line\\(([^,]+),([^,]+)(?:,([^,]+))?(?:,(\\d+))?\\)");
+        Pattern arrowPattern = Pattern.compile("aspect_graph(draw|quote)arrow\\(([^,]+),([^,]+)(?:,([^,]+))?(?:,(\\d+))?\\)");
+
+        Matcher matcher;
+
+        if ((matcher = nodePattern.matcher(command)).matches()) {
+            return processGraphNode(matcher);
+        } else if ((matcher = edgePattern.matcher(command)).matches()) {
+            return processGraphEdge(matcher);
+        } else if ((matcher = arrowPattern.matcher(command)).matches()) {
+            return processGraphArrow(matcher);
+        }
+        return null;
+    }
+
+    private static Map<String, Object> processGraphNode(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "color"
+        String name = matcher.group(2);
+        String arg1 = matcher.group(3);
+        String arg2 = matcher.group(4);
+        String t = matcher.group(5);
+        if (commandType.equals("draw")) {
+            t = matcher.group(4);
+            if (arg1 != null)
+                result.put("tikzCommand",
+                        String.format("{%s[minimum size=7mm, %s, draw]},", name, arg1));
+            else
+                result.put("tikzCommand",
+                        String.format("{%s[minimum size=7mm, circle, draw]},", name));
+        }
+        else if (commandType.equals("color") && arg1 != null){
+            arg1 = arg1.replace("\"", "");
+            if (arg2 != null)
+                result.put("tikzCommand",
+                        String.format("{%s[fill=%s, minimum size=7mm, %s, draw]},", name, arg1, arg2));
+            else
+                result.put("tikzCommand",
+                        String.format("{%s[fill=%s, minimum size=7mm, circle, draw]},", name, arg1));
+        }
+        result.put("frame", t);
+        return result;
+    }
+
+    private static Map<String, Object> processGraphEdge(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "quote"
+        String argA = matcher.group(2);
+        String argB = matcher.group(3);
+        String text = matcher.group(4);
+        String t = matcher.group(5);
+        if (commandType.equals("draw")) {
+            t = matcher.group(4);
+            result.put("tikzCommand",
+                    String.format("{%s -- %s},", argA, argB));
+        }
+        else if (commandType.equals("quote") && text != null){
+            text = text.replace("\"", "");
+            result.put("tikzCommand",
+                    String.format("{%s --[\"%s\"] %s},", argA, text, argB));
+        }
+        result.put("frame", t);
+        return result;
+    }
+
+    private static Map<String, Object> processGraphArrow(Matcher matcher) {
+        Map<String, Object> result = new HashMap<>();
+        String commandType = matcher.group(1);  // "draw" or "quote"
+        String argA = matcher.group(2);
+        String argB = matcher.group(3);
+        String text = matcher.group(4);
+        String t = matcher.group(5);
+        if (commandType.equals("draw")) {
+            t = matcher.group(4);
+            result.put("tikzCommand",
+                    String.format("{%s -> %s},", argA, argB));
+        }
+        else if (commandType.equals("quote") && text != null){
+            text = text.replace("\"", "");
+            result.put("tikzCommand",
+                    String.format("{%s ->[\"%s\"] %s},", argA, text, argB));
+        }
+        result.put("frame", t);
+        return result;
+    }
+
+    public static class NumericStringComparator implements Comparator<String> {
+
+        @Override
+        public int compare(String str1, String str2) {
+            if(str1 == null && str2 == null) return 0;
+            if(str1 == null) return -1;
+            if(str2 == null) return 1;
+            int[] nums1 = extractNumbers(str1);
+            int[] nums2 = extractNumbers(str2);
+            int result = Integer.compare(nums1[0], nums2[0]);
+            if (result == 0) {
+                result = Integer.compare(nums1[1], nums2[1]);
+            }
+            return result;
+        }
+
+        private int[] extractNumbers(String str) {
+            int[] nums = new int[2];
+            str = str.replaceAll("\\s", "");
+            if (str.startsWith("<") && str.endsWith(">")) {
+                str = str.substring(1, str.length() - 1);
+                String[] parts = str.split("-");
+                nums[0] = Integer.parseInt(parts[0]);
+                nums[1] = (parts.length > 1) ? Integer.parseInt(parts[1]) : nums[0];
+            } else {
+                nums[0] = Integer.parseInt(str);
+                nums[1] = nums[0];
+            }
+            return nums;
+        }
+    }
+
+    private static TreeMap<String, List<String>> mergeAdjacentIntervals(TreeMap<String, List<String>> inputTreeMap) {
+        TreeMap<String, List<String>> resultTreeMap = new TreeMap<>(new NumericStringComparator());
+
+        for (Map.Entry<String, List<String>> entry1 : inputTreeMap.entrySet()) {
+
+            String key1 = entry1.getKey();
+            List<String> values1 = entry1.getValue();
+
+            if (key1 == null) resultTreeMap.put(null, new ArrayList<>(values1));
+            else {
+                List<String> remaining = new ArrayList<>(values1);
+
+                if (inputTreeMap.higherKey(key1) != null) {
+
+                    String key2 = null;
+
+                    for (Map.Entry<String, List<String>> entry2 : inputTreeMap.tailMap(inputTreeMap.higherKey(key1)).entrySet()) {
+
+                        if (remaining.isEmpty()) break;
+
+                        key2 = entry2.getKey();
+                        List<String> values2 = entry2.getValue();
+                        List<String> diff = new ArrayList<>(remaining);
+
+                        diff.removeAll(values2);
+                        remaining.removeAll(diff);
+                        values2.removeAll(remaining);
+
+                        if (!diff.isEmpty()) {
+                            int key1Int = Integer.parseInt(key1);
+                            int key2Int = Integer.parseInt(key2) - 1;
+                            String newKey = (key1Int != key2Int) ? "<" + key1 + "-" + key2Int + ">" : "<" + key2Int + ">";
+                            resultTreeMap.put(newKey, diff);
+                        }
+                    }
+
+                    if (!remaining.isEmpty()) {
+                        resultTreeMap.put("<" + key1 + "-" + key2 + ">", remaining);
+                    }
+
+                }
+                else {
+
+                    if (!values1.isEmpty()) {
+                        resultTreeMap.put("<" + key1 + ">", values1);
+                    }
+
+                }
+            }
+        }
+
+        return resultTreeMap;
+    }
+
+    // -----------------------------------------------------------------------------------------------
+    // Compiling: pdflatex, lualatex
+    // -----------------------------------------------------------------------------------------------
+    public static void buildLatex(String filename) {
+        if (!pdfBuild) return;
+        try {
+            String ls = System.getProperty("line.separator");
+            ProcessBuilder processBuilderPDF = new ProcessBuilder();
+
+            System.out.println(ls + "+++> ASPECT: Preparing files for building...");
+            Thread.sleep(graph ? 5000 : 2000);
+
+            if (graph) {
+                processBuilderPDF.command("lualatex", "-halt-on-error", filename);
+            } else {
+                processBuilderPDF.command("pdflatex", "-halt-on-error", filename);
+            }
+            Process pdf = processBuilderPDF.start();
+            String pdfname = filename.substring(0, filename.lastIndexOf(".")) + ".pdf";
+            System.out.println("+++> ASPECT: Building " + pdfname);
+            pdf.waitFor();
+
+            if (pdf.exitValue() != 0) {
+                InputStream in = pdf.getInputStream();
+                if (in.available() > 0) {
+                    BufferedReader errread = new BufferedReader(new InputStreamReader(in));
+                    String error = errread.readLine();
+                    do {
+                        System.err.println(error);
+                        error = errread.readLine();
+                    } while (error != null);
+                    System.exit(1);
+                }
+            }
+            System.out.println("+++> ASPECT: File created " + pdfname + ls);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
     public void run() {
         try {
-            // apertura buffer in ingresso
-            BufferedReader threadIn = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+            String ls = System.getProperty("line.separator");
+            System.out.println("+++> ASPECT: Reading from stdin..." + ls);
 
             StringBuilder before = new StringBuilder();
             StringBuilder after = new StringBuilder();
             String line;
-            String ls = System.getProperty("line.separator");
 
             if (free) {
 
-                BufferedReader bereader = new BufferedReader(new FileReader("before.tex"));
+                BufferedReader bereader = new BufferedReader(new FileReader(beforeFilename));
 
                 while ((line = bereader.readLine()) != null) {
                     before.append(line);
                     before.append(ls);
                 }
 
-                BufferedReader afreader = new BufferedReader(new FileReader("after.tex"));
+                BufferedReader afreader = new BufferedReader(new FileReader(afterFilename));
 
                 while ((line = afreader.readLine()) != null) {
                     after.append(line);
@@ -50,798 +590,261 @@ public class TexPdfTh implements Runnable {
 
             }
 
-            // lettura input
-            String tikz_commandline = threadIn.readLine();
-            if (tikz_commandline == null){
-                System.err.println("ASPECT atoms not found. Nothing to do !");
-                System.err.println("Please check the output of the ASP solver.");
-                System.exit(1);
-            }
-
-            while (tikz_commandline != null) {
-                // creo file tex e buffer per scriverci
-                String texname = ASPECT.file_out_prefix + name + fn + ".tex";
-                File tex = new File(texname);
-                FileWriter fw = new FileWriter(tex);
-                BufferedWriter bw = new BufferedWriter(fw);
-                PrintWriter out = new PrintWriter(bw);
-
-                // stringhe e array necessari alla conversione
-                String tikz_coord;
-                String[] coords;
-                String tikz_final;
-                String[] tikz_commands;
-                ArrayList<String> graph_links = new ArrayList<>();
-
-                // divido gli atomi
-                tikz_commands = tikz_commandline.split(" ");
+            Scanner scanner = new Scanner(input);
+            boolean isValidInput = false;
+            while (scanner.hasNextLine()) {
+                String inputAtomsString = scanner.nextLine();
+                if (verbose) System.out.println(inputAtomsString);
+                TreeMap<String, List<String>> frameCommandMap = new TreeMap<>(new NumericStringComparator());
+                Pattern pattern = Pattern.compile("aspect_\\w+\\((?:\"[^\"]*\"|[^)\"]*)*\\)");
+                Matcher matcher = pattern.matcher(inputAtomsString);
+                ArrayList<String> matches = new ArrayList<>();
+                while (matcher.find()) {
+                    String match = matcher.group();
+                    matches.add(match);
+                }
+                if (matches.isEmpty()) continue;
+                isValidInput = true;
+                String[] inputAtomsArray = matches.toArray(new String[0]);
                 // order is useful in graph mode so when I print multiple
                 // solutions of the same problem the layout is the same
-                Arrays.sort(tikz_commands);
+                Arrays.sort(inputAtomsArray);
 
-                // stampa header
-                if (merge) {
-                    out.println("\\begin{tikzpicture}" + ls);
-                } else if (free) {
-                    out.println(before + ls);
-                    out.println("\\begin{tikzpicture}" + ls);
-                } else {
-                    out.println("\\documentclass{article}" + ls
-                            + "\\usepackage{tikz}" + ls
-                            + "\\usepackage{graphicx}" + ls);
-                    if(graph) {
-                        out.println("\\usetikzlibrary{graphs,quotes,graphdrawing}" + ls
-                                + "\\usegdlibrary{force}" + ls);
-                    }
-                    out.println("\\begin{document}" + ls
-                            + "\\section*{Answer:" + fn + "}" + ls
-                            + "\\begin{figure}[!h]" + ls
-                            + "\\centering" + ls
-                            + "\\resizebox{\\textwidth}{!}{%" + ls
-                            + "\\begin{tikzpicture}" + ls);
+                boolean graphCommandIsPresent = false;
+                boolean standardCommandIsPresent = false;
+                pattern = Pattern.compile("aspect_(graphdrawnode|graphcolornode|" +
+                        "graphdrawline|graphquoteline|" +
+                        "graphdrawarrow|graphquotearrow)\\(.*\\)");
+                for (String s : inputAtomsArray) {
+                    matcher = pattern.matcher(s);
+                    if (matcher.matches()) graphCommandIsPresent = true;
+                    else standardCommandIsPresent = true;
                 }
+
+                if (graphCommandIsPresent && standardCommandIsPresent) {
+                    System.err.println("***> ASPECT ERROR: Incompatible Command Modes ");
+                    System.err.println("     You are attempting to use standard mode  " +
+                            "     commands and graph mode commands simultaneously," +
+                            "     which is not supported. Please choose either" +
+                            "     standard mode or graph mode for your current operation.");
+                }
+
+                graph = graphCommandIsPresent;
+
+                // -----------------------------------------------------------------------------------------------
+                // Graph mode - Input
+                // -----------------------------------------------------------------------------------------------
                 if (graph) {
-                    out.println("\\graph[spring layout, node distance=2cm and 2cm]{" + ls);
-                }
-
-                // ciclo sugli atomi
-                for (String tikz_command : tikz_commands) {
-                    // stringbuilder per stampare le stringhe
-                    StringBuilder tikz_tmp = new StringBuilder();
-
-
-                    if (tikz_command.contains("aspect")) {
-
-                        // atomi in modalità graph
-                        if (graph) {
-
-                            // traduzione nodi, scrittura comando tikz
-                            if (tikz_command.contains("node")) {
-
-                                String node_name = null;
-
-                                if (tikz_command.contains("draw")) {
-
-                                    Pattern pattern = Pattern.compile("\\((.*?)\\)");
-                                    Matcher matcher = pattern.matcher(tikz_command);
-                                    if (matcher.find()) {
-                                        node_name = matcher.group(1);
-                                    }
-
-                                    tikz_tmp.append("{");
-                                    tikz_tmp.append(node_name);
-                                    tikz_tmp.append("[minimum size=7mm, circle, draw]},");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                    // nodo colorato
-                                } else if (tikz_command.contains("color")) {
-
-                                    String color = null;
-
-                                    Pattern pattern1 = Pattern.compile("\\((.*?),");
-                                    Matcher matcher1 = pattern1.matcher(tikz_command);
-
-                                    Pattern pattern2 = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher2 = pattern2.matcher(tikz_command);
-                                    if (matcher1.find()) {
-                                        node_name = matcher1.group(1);
-                                    }
-                                    if (matcher2.find()) {
-                                        color = matcher2.group(1);
-                                    }
-
-                                    tikz_tmp.append("{");
-                                    tikz_tmp.append(node_name);
-                                    tikz_tmp.append("[fill=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append(", minimum size=7mm, circle, draw]");
-                                    tikz_tmp.append("}, ");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-
-                                }
-
-                                // traduzione connessioni, scrittura comando tikz
-                            } else if (tikz_command.contains("line")) {
-
-                                graph_links.add(tikz_command);
-
+                    ArrayList<String> graphEdges = new ArrayList<>();
+                    for (String atom : inputAtomsArray) {
+                        if (atom.contains("node")) {
+                            Map<String, Object> result = processCommandGraph(atom);
+                            if (result != null) {
+                                String tikzCommand = (String) result.get("tikzCommand");
+                                String frame = (String) result.get("frame");
+                                frameCommandMap.computeIfAbsent(frame, k -> new LinkedList<>()).add(tikzCommand);
                             }
-                            // traduzione frecce, scrittura comando tikz
-                            else if (tikz_command.contains("arrow")) {
-
-                                graph_links.add(tikz_command);
-
+                            else {
+                                System.err.println("***> ASPECT ERROR: command not found: " + atom + ls);
+                                System.err.println("     Remember that numerical values (coordinates) " + ls +
+                                        "     must be within the range 000-999 as required " + ls +
+                                        "     also by the TikZ language" + ls);
                             }
-
-                        } else {
-                            // traduzione rettangoli e ottenimento coordinate, scrittura comando tikz
-                            if (tikz_command.contains("rectangle")) {
-
-                                tikz_coord = tikz_command.replaceAll("[^0-9]+", " ");
-                                coords = tikz_coord.trim().split(" ");
-
-                                if (tikz_command.contains("draw")) {
-                                    tikz_tmp.append("\\draw (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") rectangle (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-
-                                    // rettangolo colorato
-                                } else if (tikz_command.contains("color")) {
-
-                                    String color = null;
-
-                                    Pattern pattern = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher = pattern.matcher(tikz_command);
-                                    if (matcher.find()) {
-                                        color = matcher.group(1);
-                                    }
-
-                                    tikz_tmp.append("\\draw [color=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") rectangle (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-
-                                    // rettangolo con riempimento
-                                } else if (tikz_command.contains("fill")) {
-
-                                    String color = null;
-                                    Pattern pattern = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher = pattern.matcher(tikz_command);
-                                    if (matcher.find()) {
-                                        color = matcher.group(1);
-                                    }
-
-
-                                    tikz_tmp.append("\\draw [fill=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") rectangle (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                }
-
-                                // traduzione cerchio e ottenimento coordinate, scrittura comando tikz
-                            } else if (tikz_command.contains("circle")) {
-                                tikz_coord = tikz_command.replaceAll("[^0-9]+", " ");
-                                coords = tikz_coord.trim().split(" ");
-
-                                if (tikz_command.contains("draw")) {
-                                    tikz_tmp.append("\\draw (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") circle (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-
-                                    // cerchio colorato
-                                } else if (tikz_command.contains("color")) {
-
-                                    String color = null;
-
-                                    Pattern pattern2 = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher2 = pattern2.matcher(tikz_command);
-                                    if (matcher2.find()) {
-                                        color = matcher2.group(1);
-                                    }
-
-                                    tikz_tmp.append("\\draw [color=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") circle (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-
-                                    // cerchio con riempimento
-                                } else if (tikz_command.contains("fill")) {
-
-                                    String color = null;
-
-                                    Pattern pattern1 = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher1 = pattern1.matcher(tikz_command);
-                                    if (matcher1.find()) {
-                                        color = matcher1.group(1);
-                                    }
-
-                                    tikz_tmp.append("\\draw [fill=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") circle (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                }
-
-                                // traduzione ellisse e ottenimento coordinate, scrittura comando tikz
-                            } else if (tikz_command.contains("ellipse")) {
-                                tikz_coord = tikz_command.replaceAll("[^0-9]+", " ");
-                                coords = tikz_coord.trim().split(" ");
-
-
-                                if (tikz_command.contains("draw")) {
-                                    tikz_tmp.append("\\draw (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") ellipse (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(" and ");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                    // ellisse colorata
-                                } else if (tikz_command.contains("color")) {
-
-                                    String color = null;
-
-                                    Pattern pattern3 = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher3 = pattern3.matcher(tikz_command);
-                                    if (matcher3.find()) {
-                                        color = matcher3.group(1);
-                                    }
-
-                                    tikz_tmp.append("\\draw [color=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") ellipse (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(" and ");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-
-                                    // ellisse con riempimento
-                                } else if (tikz_command.contains("fill")) {
-
-                                    String color = null;
-
-                                    Pattern pattern1 = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher1 = pattern1.matcher(tikz_command);
-                                    if (matcher1.find()) {
-                                        color = matcher1.group(1);
-                                    }
-
-                                    tikz_tmp.append("\\draw [fill=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") ellipse (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(" and ");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                }
-
-                                // traduzione triangoli	e ottenimento coordinate, scrittura comando tikz
-                            } else if (tikz_command.contains("triangle")) {
-
-                                tikz_coord = tikz_command.replaceAll("[^0-9]+", " ");
-                                coords = tikz_coord.trim().split(" ");
-
-                                if (tikz_command.contains("draw")) {
-
-                                    tikz_tmp.append("\\draw (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") -- (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(") -- (");
-                                    tikz_tmp.append(coords[4]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[5]);
-                                    tikz_tmp.append(") cycle;");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                    // triangolo colorato
-                                } else if (tikz_command.contains("color")) {
-
-                                    String color = null;
-                                    Pattern pattern1 = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher1 = pattern1.matcher(tikz_command);
-                                    if (matcher1.find()) {
-                                        color = matcher1.group(1);
-                                    }
-
-                                    tikz_tmp.append("\\draw [color=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") -- (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(") -- (");
-                                    tikz_tmp.append(coords[4]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[5]);
-                                    tikz_tmp.append(") cycle;");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-
-                                    // triangolo con riempimento
-                                } else if (tikz_command.contains("fill")) {
-
-                                    String color = null;
-                                    Pattern pattern = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher = pattern.matcher(tikz_command);
-                                    if (matcher.find()) {
-                                        color = matcher.group(1);
-                                    }
-
-
-                                    tikz_tmp.append("\\draw [fill=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") -- (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(") -- (");
-                                    tikz_tmp.append(coords[4]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[5]);
-                                    tikz_tmp.append(") cycle;");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                }
-
-                                // traduzione nodi e ottenimento coordinate, scrittura comando tikz
-                            } else if (tikz_command.contains("node")) {
-                                tikz_coord = tikz_command.replaceAll("^[^(]*", "");
-                                tikz_coord = tikz_coord.replaceAll("[()]+", " ");
-                                coords = tikz_coord.trim().split(",");
-
-                                // TODO: maybe rename this, I'm using coords for the text printed on the node
-                                if (tikz_command.contains("draw")) {
-                                    tikz_tmp.append("\\draw (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") node {\\LARGE ");
-                                    tikz_tmp.append(coords[2].replaceAll("[\"]", ""));
-                                    tikz_tmp.append("};");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                    // nodo colorato
-                                } else if (tikz_command.contains("color")) {
-                                    tikz_tmp.append("\\draw [color=");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") node {\\LARGE ");
-                                    tikz_tmp.append(coords[2].replaceAll("[\"]", ""));
-                                    tikz_tmp.append("};");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                    // TODO: maybe rename this, I'm using coords[3] for width
-                                } else if (tikz_command.contains("image")) {
-                                    tikz_tmp.append("\\node [inner sep=0pt] (img) at (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") {\\includegraphics[width=");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append("px]{");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append("}};");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                }
-
-                                // traduzione linee e ottenimento coordinate, scrittura comando tikz
-                            } else if (tikz_command.contains("line")) {
-                                tikz_coord = tikz_command.replaceAll("[^0-9]+", " ");
-                                coords = tikz_coord.trim().split(" ");
-                                if (tikz_command.contains("draw")) {
-
-                                    tikz_tmp.append("\\draw (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") -- (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-
-                                    // linee colorate
-                                } else if (tikz_command.contains("color")) {
-
-                                    String color = null;
-                                    Pattern pattern = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher = pattern.matcher(tikz_command);
-                                    if (matcher.find()) {
-                                        color = matcher.group(1);
-                                    }
-
-                                    tikz_tmp.append("\\draw [color=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") -- (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                }
-
-                                // traduzione archi e ottenimento coordinate, scrittura comando tikz
-                            } else if (tikz_command.contains("arc")) {
-                                tikz_coord = tikz_command.replaceAll("[^0-9]+", " ");
-                                coords = tikz_coord.trim().split(" ");
-
-                                if (tikz_command.contains("draw")) {
-                                    tikz_tmp.append("\\draw (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") arc (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(":");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(":");
-                                    tikz_tmp.append(coords[4]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                    // arco colorato
-                                } else if (tikz_command.contains("color")) {
-
-                                    String color = null;
-
-                                    Pattern pattern1 = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher1 = pattern1.matcher(tikz_command);
-                                    if (matcher1.find()) {
-                                        color = matcher1.group(1);
-                                    }
-
-                                    tikz_tmp.append("\\draw [color=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") arc (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(":");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(":");
-                                    tikz_tmp.append(coords[4]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-                                }
-
-                                // traduzione frecce e ottenimento coordinate, scrittura comando tikz
-                            } else if (tikz_command.contains("arrow")) {
-                                tikz_coord = tikz_command.replaceAll("[^0-9]+", " ");
-                                coords = tikz_coord.trim().split(" ");
-                                if (tikz_command.contains("draw")) {
-
-                                    tikz_tmp.append("\\draw [->] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") -- (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-
-                                    // frecce colorate
-                                } else if (tikz_command.contains("color")) {
-
-                                    String color = null;
-                                    Pattern pattern = Pattern.compile(",(\\w+)\\)");
-                                    Matcher matcher = pattern.matcher(tikz_command);
-                                    if (matcher.find()) {
-                                        color = matcher.group(1);
-                                    }
-
-
-                                    tikz_tmp.append("\\draw [->] [color=");
-                                    tikz_tmp.append(color);
-                                    tikz_tmp.append("] (");
-                                    tikz_tmp.append(coords[0]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[1]);
-                                    tikz_tmp.append(") -- (");
-                                    tikz_tmp.append(coords[2]);
-                                    tikz_tmp.append(",");
-                                    tikz_tmp.append(coords[3]);
-                                    tikz_tmp.append(");");
-                                    tikz_final = tikz_tmp.toString();
-                                    out.println(tikz_final);
-
-                                }
-                            }
+                        } else if (atom.contains("line") || atom.contains("arrow")) {
+                            graphEdges.add(atom);
+                        }
+                    }
+                    for (String atom : graphEdges) {
+                        Map<String, Object> result = processCommandGraph(atom);
+                        if (result != null) {
+                            String tikzCommand = (String) result.get("tikzCommand");
+                            String frame = (String) result.get("frame");
+                            frameCommandMap.computeIfAbsent(frame, k -> new LinkedList<>()).add(tikzCommand);
+                        }
+                        else {
+                            System.err.println("***> ASPECT ERROR: command not found: " + atom + ls);
+                            System.err.println("     Remember that numerical values (coordinates) " + ls +
+                                    "     must be within the range 000-999 as required " + ls +
+                                    "     also by the TikZ language" + ls);
                         }
                     }
                 }
-
-                if (graph) {
-
-                    for (String tikz_command : graph_links) {
-                        // stringbuilder per stampare le stringhe
-                        StringBuilder tikz_tmp = new StringBuilder();
-
-                        // traduzione connessioni, scrittura comando tikz
-                        if (tikz_command.contains("line")) {
-
-                            String node1 = null;
-                            String node2 = null;
-
-                            if (tikz_command.contains("draw")) {
-
-                                Pattern pattern1 = Pattern.compile("\\((.*?),");
-                                Matcher matcher1 = pattern1.matcher(tikz_command);
-
-                                Pattern pattern2 = Pattern.compile(",(.*?)\\)");
-                                Matcher matcher2 = pattern2.matcher(tikz_command);
-
-                                if (matcher1.find()) {
-                                    node1 = matcher1.group(1);
-                                }
-                                if (matcher2.find()) {
-                                    node2 = matcher2.group(1);
-                                }
-
-                                tikz_tmp.append("{");
-                                tikz_tmp.append(node1);
-                                tikz_tmp.append("--");
-                                tikz_tmp.append(node2);
-                                tikz_tmp.append("}, ");
-                                tikz_final = tikz_tmp.toString();
-                                out.println(tikz_final);
-
-                                // linee etichettate
-                            } else if (tikz_command.contains("quote")) {
-                                String quote = null;
-
-                                Pattern pattern1 = Pattern.compile("\\((.*?),");
-                                Matcher matcher1 = pattern1.matcher(tikz_command);
-
-                                Pattern pattern2 = Pattern.compile(",(.*?),");
-                                Matcher matcher2 = pattern2.matcher(tikz_command);
-
-                                Pattern pattern = Pattern.compile("\"(.*?)\"");
-                                Matcher matcher = pattern.matcher(tikz_command);
-
-
-                                if (matcher1.find()) {
-                                    node1 = matcher1.group(1);
-                                }
-                                if (matcher2.find()) {
-                                    node2 = matcher2.group(1);
-                                }
-                                if (matcher.find()) {
-                                    quote = matcher.group(1);
-                                }
-
-                                tikz_tmp.append("{");
-                                tikz_tmp.append(node1);
-                                tikz_tmp.append("--[\"");
-                                tikz_tmp.append(quote);
-                                tikz_tmp.append("\"]");
-                                tikz_tmp.append(node2);
-                                tikz_tmp.append("}, ");
-                                tikz_final = tikz_tmp.toString();
-                                out.println(tikz_final);
-                            }
-                            // traduzione frecce, scrittura comando tikz
-                        } else if (tikz_command.contains("arrow")) {
-
-                            String node1 = null;
-                            String node2 = null;
-
-                            if (tikz_command.contains("draw")) {
-
-                                Pattern pattern1 = Pattern.compile("\\((.*?),");
-                                Matcher matcher1 = pattern1.matcher(tikz_command);
-
-                                Pattern pattern2 = Pattern.compile(",(.*?)\\)");
-                                Matcher matcher2 = pattern2.matcher(tikz_command);
-
-                                if (matcher1.find()) {
-                                    node1 = matcher1.group(1);
-                                }
-                                if (matcher2.find()) {
-                                    node2 = matcher2.group(1);
-                                }
-
-                                tikz_tmp.append("{");
-                                tikz_tmp.append(node1);
-                                tikz_tmp.append("->");
-                                tikz_tmp.append(node2);
-                                tikz_tmp.append("}, ");
-                                tikz_final = tikz_tmp.toString();
-                                out.println(tikz_final);
-
-                                // linee etichettate
-                            } else if (tikz_command.contains("quote")) {
-                                String quote = null;
-
-                                Pattern pattern1 = Pattern.compile("\\((.*?),");
-                                Matcher matcher1 = pattern1.matcher(tikz_command);
-
-                                Pattern pattern2 = Pattern.compile(",(.*?),");
-                                Matcher matcher2 = pattern2.matcher(tikz_command);
-
-                                Pattern pattern = Pattern.compile("\"(.*?)\"");
-                                Matcher matcher = pattern.matcher(tikz_command);
-
-
-                                if (matcher1.find()) {
-                                    node1 = matcher1.group(1);
-                                }
-                                if (matcher2.find()) {
-                                    node2 = matcher2.group(1);
-                                }
-                                if (matcher.find()) {
-                                    quote = matcher.group(1);
-                                }
-
-                                tikz_tmp.append("{");
-                                tikz_tmp.append(node1);
-                                tikz_tmp.append("->[\"");
-                                tikz_tmp.append(quote);
-                                tikz_tmp.append("\"] ");
-                                tikz_tmp.append(node2);
-                                tikz_tmp.append("}, ");
-                                tikz_final = tikz_tmp.toString();
-                                out.println(tikz_final);
-                            }
-                        }
-                    }
-                    out.println("};" + ls);
-                }
-
-                // stampa footer documento
-                if (merge) {
-                    out.println("\\end{tikzpicture}");
-
-                } else if (free) {
-                    out.println("\\end{tikzpicture}" + ls);
-                    out.println(after);
-                }
+                // -----------------------------------------------------------------------------------------------
+                // Standard mode - Input
+                // -----------------------------------------------------------------------------------------------
                 else {
-                    out.println("\\end{tikzpicture}" + ls
-                            + "}" + ls
-                            + "\\end{figure}" + ls
-                            + "\\end{document}");
+                    for (String atom : inputAtomsArray) {
+                        Map<String, Object> result = processCommand(atom);
+                        if (result != null) {
+                            String tikzCommand = (String) result.get("tikzCommand");
+                            String frame = (String) result.get("frame");
+                            frameCommandMap.computeIfAbsent(frame, k -> new LinkedList<>()).add(tikzCommand);
+                        } else {
+                            System.err.println("***> ASPECT ERROR: command not found: " + atom + ls);
+                            System.err.println("     Remember that numerical values (coordinates) " + ls +
+                                    "     must be within the range 000-999 as required " + ls +
+                                    "     also by the TikZ language" + ls);
+                        }
+                    }
                 }
-                // flush e chiusura buffer output
-                out.flush();
-                bw.flush();
-                fw.flush();
 
-                out.close();
-                bw.close();
-                fw.close();
-                fn = fn + 1;
-                System.out.println("File created: " + texname);
+                boolean useOverlay = frameCommandMap.size() > 1;
 
-                // avvio pdflatex e passaggio del file creato
-                if (!merge && !free) {
-                    ProcessBuilder processBuilderPDF = new ProcessBuilder();
-                    if (graph) {
-                        processBuilderPDF.command("lualatex", "-halt-on-error", texname);
+                // -----------------------------------------------------------------------------------------------
+                // Single File w/ Beamer Overlays
+                // -----------------------------------------------------------------------------------------------
+                if (merge && useOverlay && !graph) {
+                    int fileId = files.isEmpty() ? 0 : files.lastKey();
+                    fileId +=1 ;
+                    String filename = name + "_" + fileId + ".tex";
+                    File file = new File(filename);
+                    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file)));
+
+                    if (free) {
+                        out.println(before + ls);
+                        out.println("\\begin{tikzpicture}");
                     }
                     else {
-                        processBuilderPDF.command("pdflatex", "-halt-on-error", texname);
+                        out.println("\\begin{frame}" + ls
+                                + "\\begin{center}" + ls
+                                + "\\resizebox{" + resizeFactor + "\\textwidth}{!}{" + ls
+                                + "\\begin{tikzpicture}");
                     }
-                    Process pdf = processBuilderPDF.start();
 
+                    TreeMap<String, List<String>> frameCommandMapOverlaysInterval = mergeAdjacentIntervals(frameCommandMap);
 
-                    // ottenimento nome pdf e conferma creazione
-                    String pdfname = texname.substring(0, texname.lastIndexOf(".")) + ".pdf";
-                    System.out.println("Building... " + pdfname + "\r");
-                    // attendo fine esecuzione pdf
-                    pdf.waitFor();
-
-                    if(pdf.exitValue() != 0){
-                        InputStream in = pdf.getInputStream();
-                        if (in.available() > 0) {
-                            BufferedReader errread = new BufferedReader(new InputStreamReader(in));
-                            String error = errread.readLine();
-                            do {
-                                System.err.println(error);
-                                error = errread.readLine();
-                            } while (error != null);
-                            System.exit(1);
+                    for (Map.Entry<String, List<String>> commandOverlaysInterval : frameCommandMapOverlaysInterval.entrySet()) {
+                        List<String> tikzCommandsList = commandOverlaysInterval.getValue();
+                        tikzCommandsList.sort(Comparator.comparing((String s) -> s.contains("node"))
+                                .thenComparing((String s) -> s.contains("color"))
+                                .thenComparing(Comparator.naturalOrder()));
+                        if (commandOverlaysInterval.getKey() != null) {
+                            for (String tikzCommand : tikzCommandsList)
+                                out.println("  \\only" + commandOverlaysInterval.getKey() + "{ " + tikzCommand + " }");
+                        }
+                        else {
+                            for (String tikzCommand : tikzCommandsList)
+                                out.println("  " + tikzCommand);
                         }
                     }
 
-                    System.out.println("File created: " + pdfname + "\r");
-                    // passo a nuova linea
+                    if (free) {
+                        out.println("\\end{tikzpicture}" + ls);
+                        out.println(after);
+                    }
+                    else {
+                        out.println("\\end{tikzpicture}" + ls
+                                + "}" + ls
+                                + "\\end{center}" + ls
+                                + "\\end{frame}");
+                    }
+
+                    out.flush();
+                    out.close();
+
+                    files.put(fileId, 1);
+                    System.out.println("+++> ASPECT: File created " + filename);
 
                 }
-                tikz_commandline = threadIn.readLine();
+                // -----------------------------------------------------------------------------------------------
+                // Multiple Files
+                // -----------------------------------------------------------------------------------------------
+                else {
+                    List<String> tikzCommandsForNullFrame = frameCommandMap.get(null);
+                    int fileId = files.isEmpty() ? 0 : files.lastKey();
+                    fileId +=1 ;
+                    int frameNumber = 1;
+                    for (Map.Entry<String, List<String>> entry : frameCommandMap.entrySet()) {
+                        // if there is no null frame only skip it otherwise create a single file
+                        if (entry.getKey() == null && !(frameCommandMap.size() == 1)) {
+                            continue;
+                        }
+                        String filename = name + "_" + fileId + (!(frameCommandMap.size() == 1) ? "_" + frameNumber + ".tex" : ".tex");
+                        // String filename = name + "_" + fileId + "_" + frameNumber + ".tex";
+                        File file = new File(filename);
+                        PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(file)));
 
+                        // -----------------------------------------------------------------------------------------------
+                        // Tikzpicture
+                        // -----------------------------------------------------------------------------------------------
+
+                        if (free) {
+                            out.println(before + ls);
+                            out.println("\\begin{tikzpicture}");
+                        }
+                        else if (merge) {
+                            out.println("\\begin{frame}" + ls
+                                    + "\\begin{center}" + ls
+                                    + "\\resizebox{" + resizeFactor + "\\textwidth}{!}{" + ls
+                                    + "\\begin{tikzpicture}");
+                        }
+                        else {
+                            out.println("\\documentclass[tikz]{standalone}" + ls);
+                            if (graph) {
+                                out.println("\\usetikzlibrary{graphs, quotes, graphdrawing}" + ls
+                                        + "\\usegdlibrary{force}" + ls);
+                            }
+                            out.println("\\begin{document}" + ls
+                                    + "\\begin{tikzpicture}");
+                        }
+                        if (graph) {
+                            out.println("\\graph[spring layout, node distance=2cm and 2cm]{" + ls);
+                        }
+
+                        List<String> tikzCommandsList = entry.getValue();
+
+                        if (tikzCommandsForNullFrame != null) {
+                            if (!graph) tikzCommandsForNullFrame.sort(Comparator.comparing((String s) -> s.contains("node"))
+                                    .thenComparing((String s) -> s.contains("color"))
+                                    .thenComparing(Comparator.naturalOrder()));
+                            for (String tikzCommand : tikzCommandsForNullFrame) {
+                                out.println("  " + tikzCommand);
+                            }
+                        }
+                        if (!(frameCommandMap.size() == 1)) {
+                            if (!graph) tikzCommandsList.sort(Comparator.comparing((String s) -> s.contains("node"))
+                                    .thenComparing((String s) -> s.contains("color"))
+                                    .thenComparing(Comparator.naturalOrder()));
+                            for (String tikzCommand : tikzCommandsList) {
+                                out.println("  " + tikzCommand);
+                            }
+                        }
+
+                        if (graph)
+                            out.println("};");
+                        if (free) {
+                            out.println("\\end{tikzpicture}" + ls);
+                            out.println(after);
+                        }
+                        else if (merge) {
+                            out.println("\\end{tikzpicture}" + ls
+                                    + "}" + ls
+                                    + "\\end{center}" + ls
+                                    + "\\end{frame}");
+                        }
+                        else {
+                            out.println("\\end{tikzpicture}" + ls
+                                    + "\\end{document}");
+                        }
+
+                        out.flush();
+                        out.close();
+
+                        files.put(fileId, frameNumber);
+                        System.out.println("+++> ASPECT: File created " + filename);
+
+                        if (!merge) buildLatex(filename);
+
+                        frameNumber += 1;
+                    }
+                }
             }
+
+            if (!isValidInput){
+                System.err.println("***> ASPECT ERROR: atoms not found. Nothing to do !");
+                System.err.println("     Please check the output of the ASP solver." + ls);
+            }
+            scanner.close();
 
         } catch (Exception e) {
             e.printStackTrace();
