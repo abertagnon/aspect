@@ -348,7 +348,7 @@ public class TexPdfTh implements Runnable {
 
     private static Map<String, Object> processCommandGraph(String command) {
 
-        Pattern nodePattern = Pattern.compile("aspect_graph(draw|color)node\\(([^,]+)(?:,([^,]+))?(?:,([^,]+))?(?:,(\\d+))?\\)");
+        Pattern nodePattern = Pattern.compile("aspect_graph(draw|color)node\\(([^,]+)(?:,(\\w+|\"[^\"]+\"))?(?:,([^,]+))?(?:,(\\d+))?\\)");
         Pattern edgePattern = Pattern.compile("aspect_graph(draw|quote)line\\(([^,]+),([^,]+)(?:,([^,]+))?(?:,(\\d+))?\\)");
         Pattern arrowPattern = Pattern.compile("aspect_graph(draw|quote)arrow\\(([^,]+),([^,]+)(?:,([^,]+))?(?:,(\\d+))?\\)");
 
