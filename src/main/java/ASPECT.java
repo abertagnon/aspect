@@ -1,7 +1,7 @@
 import java.io.*;
 import org.apache.commons.cli.*;
 
-public class ASPECT_H {
+public class ASPECT {
 
     public static void main(String[] args) {
         String ls = System.getProperty("line.separator");
@@ -13,11 +13,11 @@ public class ASPECT_H {
                 "               /_/ \\_\\___/_| |___\\___| |_|  " + ls;
         System.out.println(asciiTitle);
         System.out.println(" ASPECT: Answer Set rePresentation as vEctor graphiCs in laTex ");
-        System.out.println("        https://github.com/abertagnon/aspect -- v0.1.3a        ");
-        String yellowColor = "\u001B[33m";
-        String resetColor = "\u001B[0m";
-        String debugText = " ************** TEST ONLY -- NOT FOR PRODUCTION ************** ";
-        System.out.println(yellowColor + debugText + resetColor);
+        System.out.println("        https://github.com/abertagnon/aspect -- v0.1.3         ");
+        // String yellowColor = "\u001B[33m";
+        // String resetColor = "\u001B[0m";
+        // String debugText = " ************** TEST ONLY -- NOT FOR PRODUCTION ************** ";
+        // System.out.println(yellowColor + debugText + resetColor);
         System.out.println("###############################################################" + ls);
         Options options = new Options();
 
@@ -110,7 +110,7 @@ public class ASPECT_H {
                 verbose = true;
             }
             if(cmd.hasOption("nobuild")) {
-                TexPdfThNew.pdfBuild = false;
+                TexPdfTh.pdfBuild = false;
             }
 
             if (cmd.hasOption("b")) {
@@ -123,10 +123,10 @@ public class ASPECT_H {
             if (cmd.hasOption("f")) {
                 free = true;
                 if (cmd.hasOption("before")) {
-                    TexPdfThNew.beforeFilename = cmd.getOptionValue("before");
+                    TexPdfTh.beforeFilename = cmd.getOptionValue("before");
                 }
                 if (cmd.hasOption("after")) {
-                    TexPdfThNew.afterFilename = cmd.getOptionValue("after");
+                    TexPdfTh.afterFilename = cmd.getOptionValue("after");
                 }
             }
 
@@ -161,16 +161,16 @@ public class ASPECT_H {
         }
 
         try {
-            TexPdfThNew tp = new TexPdfThNew(System.in, outputFileName, verbose, merge, free, resizeFactor);
+            TexPdfTh tp = new TexPdfTh(System.in, outputFileName, verbose, merge, free, resizeFactor);
             Thread texpdf = new Thread(tp);
 
             texpdf.start();
             texpdf.join();
 
             if (merge) {
-                int fileNumber = TexPdfThNew.files.isEmpty() ? 0 : TexPdfThNew.files.lastKey();
+                int fileNumber = TexPdfTh.files.isEmpty() ? 0 : TexPdfTh.files.lastKey();
                 if (fileNumber != 0) {
-                    int frameNumber = TexPdfThNew.files.get(fileNumber);
+                    int frameNumber = TexPdfTh.files.get(fileNumber);
                     String mergedFilename = outputFileName + "_merged.tex";
                     PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(mergedFilename)));
 
@@ -179,7 +179,7 @@ public class ASPECT_H {
                             + "\\usepackage{graphicx}" + ls
                             + "\\usepackage{xcolor}");
 
-                    if (TexPdfThNew.graph) {
+                    if (TexPdfTh.graph) {
                         out.println("\\usetikzlibrary{graphs,quotes,graphdrawing}" + ls
                                 + "\\usegdlibrary{force}" + ls);
                     }
@@ -197,15 +197,15 @@ public class ASPECT_H {
                     out.close();
 
                     System.out.println("+++> ASPECT: File created " + mergedFilename);
-                    TexPdfThNew.buildLatex(mergedFilename);
+                    TexPdfTh.buildLatex(mergedFilename);
                 }
             }
 
             if (animate) {
-                int fileNumber = TexPdfThNew.files.isEmpty() ? 0 : TexPdfThNew.files.lastKey();
+                int fileNumber = TexPdfTh.files.isEmpty() ? 0 : TexPdfTh.files.lastKey();
                 if (fileNumber != 0) {
                     for (int j = 1; j <= fileNumber; j++) {
-                        int frameNumber = TexPdfThNew.files.get(j);
+                        int frameNumber = TexPdfTh.files.get(j);
                         String animatedFilename = outputFileName + "_" + fileNumber + "_animated.tex";
                         PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(animatedFilename)));
 
@@ -220,7 +220,7 @@ public class ASPECT_H {
                         out.close();
 
                         System.out.println("+++> ASPECT: File created " + animatedFilename);
-                        TexPdfThNew.buildLatex(animatedFilename);
+                        TexPdfTh.buildLatex(animatedFilename);
                     }
                 }
             }

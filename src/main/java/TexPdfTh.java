@@ -11,7 +11,7 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Scanner;
 
-public class TexPdfThNew implements Runnable {
+public class TexPdfTh implements Runnable {
     InputStream input;
     String name;
     boolean verbose;
@@ -26,7 +26,7 @@ public class TexPdfThNew implements Runnable {
     static String afterFilename = "after.tex";
 
     //definizione dell'input, argomenti in ingresso
-    public TexPdfThNew(InputStream is, String filename, boolean verbose, boolean merge, boolean free, String resizeFactor) {
+    public TexPdfTh(InputStream is, String filename, boolean verbose, boolean merge, boolean free, String resizeFactor) {
         this.input = is;
         this.name = filename;
         this.verbose = verbose;
