@@ -1,0 +1,69 @@
+\documentclass{beamer}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\begin{document}
+\begin{frame}
+    \begin{center}
+    \resizebox{1\textwidth}{!}{
+    \begin{tikzpicture}
+      \fill [white] (0,0) rectangle (42,24);
+      \fill [gray] (20,0) rectangle (22,18);
+      \fill [gray] (34,0) rectangle (36,18);
+      \fill [gray] (6,0) rectangle (8,18);
+      \draw (21,19) node[text centered, font=\Huge] {b};
+      \draw (35,19) node[text centered, font=\Huge] {c};
+      \draw (7,19) node[text centered, font=\Huge] {a};
+      \only<1>{ \fill [yellow] (5,6) rectangle (9,8); }
+      \only<1>{ \draw (28,22) node[text centered, font=\Huge] {b}; }
+      \only<1>{ \draw [text=yellow] (21,22) node[text centered, font=\Huge] {yellow}; }
+      \only<1-2>{ \fill [blue] (4,4) rectangle (10,6); }
+      \only<1-4>{ \fill [green] (2,2) rectangle (12,4); }
+      \only<1-8>{ \fill [red] (0,0) rectangle (14,2); }
+      \only<1-15>{ \draw (16,22) node[text centered, font=\Huge] {move }; }
+      \only<1-15>{ \draw (25,22) node[text centered, font=\Huge] { in }; }
+      \only<2>{ \draw [text=blue] (21,22) node[text centered, font=\Huge] {blue}; }
+      \only<2-3>{ \fill [yellow] (19,0) rectangle (23,2); }
+      \only<2-3>{ \draw (28,22) node[text centered, font=\Huge] {c}; }
+      \only<3>{ \draw [text=yellow] (21,22) node[text centered, font=\Huge] {yellow}; }
+      \only<3-6>{ \fill [blue] (32,0) rectangle (38,2); }
+      \only<4>{ \draw (28,22) node[text centered, font=\Huge] {b}; }
+      \only<4>{ \draw [text=green] (21,22) node[text centered, font=\Huge] {green}; }
+      \only<4-5>{ \fill [yellow] (33,2) rectangle (37,4); }
+      \only<5>{ \draw (28,22) node[text centered, font=\Huge] {a}; }
+      \only<5>{ \draw [text=yellow] (21,22) node[text centered, font=\Huge] {yellow}; }
+      \only<5-12>{ \fill [green] (16,0) rectangle (26,2); }
+      \only<6>{ \draw [text=blue] (21,22) node[text centered, font=\Huge] {blue}; }
+      \only<6-7>{ \fill [yellow] (5,2) rectangle (9,4); }
+      \only<6-7>{ \draw (28,22) node[text centered, font=\Huge] {b}; }
+      \only<7>{ \draw [text=yellow] (21,22) node[text centered, font=\Huge] {yellow}; }
+      \only<7-10>{ \fill [blue] (18,2) rectangle (24,4); }
+      \only<8>{ \draw [text=red] (21,22) node[text centered, font=\Huge] {red}; }
+      \only<8-9>{ \fill [yellow] (19,4) rectangle (23,6); }
+      \only<8-9>{ \draw (28,22) node[text centered, font=\Huge] {c}; }
+      \only<9>{ \draw [text=yellow] (21,22) node[text centered, font=\Huge] {yellow}; }
+      \only<9-16>{ \fill [red] (28,0) rectangle (42,2); }
+      \only<10>{ \draw [text=blue] (21,22) node[text centered, font=\Huge] {blue}; }
+      \only<10-11>{ \fill [yellow] (33,2) rectangle (37,4); }
+      \only<10-11>{ \draw (28,22) node[text centered, font=\Huge] {a}; }
+      \only<11>{ \draw [text=yellow] (21,22) node[text centered, font=\Huge] {yellow}; }
+      \only<11-14>{ \fill [blue] (4,0) rectangle (10,2); }
+      \only<12>{ \draw (28,22) node[text centered, font=\Huge] {c}; }
+      \only<12>{ \draw [text=green] (21,22) node[text centered, font=\Huge] {green}; }
+      \only<12-13>{ \fill [yellow] (5,2) rectangle (9,4); }
+      \only<13>{ \draw (28,22) node[text centered, font=\Huge] {b}; }
+      \only<13>{ \draw [text=yellow] (21,22) node[text centered, font=\Huge] {yellow}; }
+      \only<13-16>{ \fill [green] (30,2) rectangle (40,4); }
+      \only<14>{ \draw [text=blue] (21,22) node[text centered, font=\Huge] {blue}; }
+      \only<14-15>{ \fill [yellow] (19,0) rectangle (23,2); }
+      \only<14-15>{ \draw (28,22) node[text centered, font=\Huge] {c}; }
+      \only<15>{ \draw [text=yellow] (21,22) node[text centered, font=\Huge] {yellow}; }
+      \only<15-16>{ \fill [blue] (32,4) rectangle (38,6); }
+      \only<16>{ \fill [yellow] (33,6) rectangle (37,8); }
+    \end{tikzpicture}
+    }
+    \end{center}
+    \end{frame}
+    
+
+\end{document}

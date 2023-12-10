@@ -1,0 +1,28 @@
+\documentclass[tikz]{standalone}
+
+\begin{document}
+\begin{tikzpicture}
+  \draw (0,0) -- (0,8);
+  \draw (10,0) -- (10,8);
+  \draw (12,0) -- (12,8);
+  \draw (14,0) -- (14,8);
+  \draw (16,0) -- (16,8);
+  \draw (2,0) -- (2,8);
+  \draw (4,0) -- (4,8);
+  \draw (6,0) -- (6,8);
+  \draw (8,0) -- (8,8);
+  \fill [blue] (12,2) rectangle (16,4);
+  \fill [green] (2,0) rectangle (4,2);
+  \fill [red] (0,4) rectangle (2,6);
+  \fill [yellow] (4,6) rectangle (12,8);
+  \draw (0,9) node[text centered, font=\huge] {9};
+  \draw (10,9) node[text centered, font=\huge] {14};
+  \draw (12,9) node[text centered, font=\huge] {15};
+  \draw (14,9) node[text centered, font=\huge] {16};
+  \draw (16,9) node[text centered, font=\huge] {17};
+  \draw (2,9) node[text centered, font=\huge] {10};
+  \draw (4,9) node[text centered, font=\huge] {11};
+  \draw (6,9) node[text centered, font=\huge] {12};
+  \draw (8,9) node[text centered, font=\huge] {13};
+\end{tikzpicture}
+\end{document}

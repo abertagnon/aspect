@@ -1,0 +1,28 @@
+\documentclass[tikz]{standalone}
+
+\usetikzlibrary{graphs, quotes, graphdrawing}
+\usegdlibrary{force}
+
+\begin{document}
+\begin{tikzpicture}
+\graph[spring layout, node distance=2cm and 2cm]{
+
+  {0[fill=green, minimum size=7mm, circle, draw]},
+  {1[fill=yellow, minimum size=7mm, circle, draw]},
+  {2[fill=cyan, minimum size=7mm, circle, draw]},
+  {3[fill=orange, minimum size=7mm, circle, draw]},
+  {4[fill=cyan, minimum size=7mm, circle, draw]},
+  {5[fill=cyan, minimum size=7mm, circle, draw]},
+  {0 -- 1},
+  {0 -- 2},
+  {0 -- 3},
+  {0 -- 4},
+  {0 -- 5},
+  {1 -- 3},
+  {1 -- 4},
+  {2 -- 3},
+  {3 -- 4},
+  {3 -- 5},
+};
+\end{tikzpicture}
+\end{document}
