@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'ASPECT'
-copyright = '2023, Alessandro Bertagnon, Marco Gavanelli, Fabio Zanotti'
-author = 'Alessandro Bertagnon, Marco Gavanelli, Fabio Zanotti'
-release = 'v0.1.2'
+copyright = '2023, Alessandro Bertagnon, Marco Gavanelli'
+author = 'Alessandro Bertagnon, Marco Gavanelli'
+release = 'v0.1.3'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
