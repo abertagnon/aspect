@@ -5,10 +5,10 @@
 [![Documentation Status](https://readthedocs.org/projects/aspect-docs/badge/?version=latest)](https://aspect-docs.readthedocs.io/en/latest/?badge=latest)
 
 > **Warning**  
-> The ASPECT interpreter is under development, expect frequent updates and bugs.
+> On December 10, 2023 we released version 0.1.3 with significant changes, the new documentation is still being updated, we apologize for the inconvenience.
 
 ## Documentation
-:book: Full Documentation: [`https://aspect-docs.readthedocs.io/`](https://aspect-docs.readthedocs.io/)
+📚 Full Documentation: [`https://aspect-docs.readthedocs.io/`](https://aspect-docs.readthedocs.io/)
 
 ## How to Contribute
 :bulb: *Have an idea? :beetle: Found a bug?*
@@ -17,7 +17,7 @@ Open an issue describing the contribution you would like to make, the bug you fo
 You can also [contact us](https://docente.unife.it/alessandro.bertagnon) by email :envelope:.
 
 ## Publications
-This tool is described in the paper [*ASPECT: Answer Set rePresentation as vEctor graphiCs in laTex*](https://ceur-ws.org/Vol-3428/paper3.pdf) by Alessandro Bertagnon, Marco Gavanelli and Fabio Zanotti accepted for publication at the 38th Italian Conference on Computational Logic ([CILC 2023](https://www.programmazionelogica.it/associazione/il-convegno/cilc23/)).
+The first release of this tool (until v0.1.2) is described in the paper [*ASPECT: Answer Set rePresentation as vEctor graphiCs in laTex*](https://ceur-ws.org/Vol-3428/paper3.pdf) by Alessandro Bertagnon, Marco Gavanelli and Fabio Zanotti accepted for publication at the 38th Italian Conference on Computational Logic ([CILC 2023](https://www.programmazionelogica.it/associazione/il-convegno/cilc23/)).
 
 #### How to cite
 ```
