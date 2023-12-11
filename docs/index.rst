@@ -13,10 +13,9 @@ An intuitive and declarative way to graphically represent answer sets in LaTeX
 .. note:: 
    Documentation is being updated; some sections may be missing or incomplete.
 
-.. caution:: 
-   The ASPECT interpreter is under development, expect frequent updates and bugs.
-   The current implementation of ASPECT has been tested only on Ubuntu 22.04 other 
-   operating systems (e.g., Windows, macOS) are expected to be fully supported in upcoming releases.
+.. warning:: 
+   This documentation applies only to version ``0.1.3`` or later of the ASPECT interpreter; 
+   earlier versions are no longer supported.
 
 .. toctree::
    :maxdepth: 2
