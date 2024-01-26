@@ -16,13 +16,14 @@ which are instead handled and optimized by the TikZ package. This variant consis
   so they cannot be used in the same ASP program at the same time.
 
 
-Animated graphics
--------------------------------
-For certain problem types, each answer set represents a sequence of actions to be executed in order to achieve a goal starting from a defined initial state.
-In this regard, each atom in the ASPECT language supports an optional integer argument denoted by ``frame`` which represents the frame of the animation in which the graphical element should be inserted.
+.. topic:: Animated graphics
 
-.. hint:: 
-   ASPECT atoms without the frame parameter will be inserted in all frames of the animation.
+  For certain problem types, each answer set represents a sequence of actions to be executed in order to achieve a goal starting from a defined initial state.
+  In these problems, dynamic visualization through animation is especially valuable, providing insights into the transition from the initial state to the final state.
+  In this regard, each atom in the ASPECT language supports an optional integer argument denoted by ``frame`` which represents the frame of the animation in which the graphical element should be inserted.
+  
+  .. hint:: 
+    ASPECT atoms without the frame parameter will be inserted in all frames of the animation.
 
 
 .. _standardModeAtoms:

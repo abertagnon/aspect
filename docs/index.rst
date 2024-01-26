@@ -10,9 +10,6 @@ Welcome to ASPECT's documentation!
 
 An intuitive and declarative way to graphically represent answer sets in LaTeX 
 
-.. note:: 
-   Documentation is being updated; some sections may be missing or incomplete.
-
 .. warning:: 
    This documentation applies only to version ``0.1.3`` or later of the ASPECT interpreter; 
    earlier versions are no longer supported.

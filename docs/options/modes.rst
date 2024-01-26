@@ -22,7 +22,7 @@ In all operating modes the ASPECT interpreter receives its input directly from s
 During testing, we verified compatibility with `clingo <https://potassco.org/clingo/>`_ and `dlv <https://dlv.demacs.unical.it/>`_ ASP solvers.
 
 .. code-block:: none
-
+ 
    clingo <clingo arguments> | java -jar ASPECT.jar <arguments>
    dlv <dlv arguments> | java -jar ASPECT.jar <arguments> 
 
