@@ -1,10 +1,20 @@
+import java.awt.*;
+import java.awt.datatransfer.*;
 import java.io.*;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.List;
+
 import org.apache.commons.cli.*;
+import javax.imageio.ImageIO;
 
 public class ASPECT {
 
     public static void main(String[] args) {
-        String ls = System.getProperty("line.separator");
+        String ls = System.lineSeparator();
         System.out.println("\n###############################################################");
         String asciiTitle =
                 "                  _   ___ ___ ___ ___ _____ " + ls +
@@ -13,7 +23,7 @@ public class ASPECT {
                 "               /_/ \\_\\___/_| |___\\___| |_|  " + ls;
         System.out.println(asciiTitle);
         System.out.println(" ASPECT: Answer Set rePresentation as vEctor graphiCs in laTex ");
-        System.out.println("        https://github.com/abertagnon/aspect -- v0.1.3         ");
+        System.out.println("        https://github.com/abertagnon/aspect -- v0.1.4         ");
         // String yellowColor = "\u001B[33m";
         // String resetColor = "\u001B[0m";
         // String debugText = " ************** TEST ONLY -- NOT FOR PRODUCTION ************** ";
@@ -38,6 +48,21 @@ public class ASPECT {
                 .build());
         options.addOption(Option.builder("h").longOpt("help")
                 .desc("shows ASPECT command line options")
+                .hasArg(false)
+                .required(false)
+                .build());
+        options.addOption(Option.builder("k").longOpt("keep")
+                .desc("maintains logs and auxiliary files produced by pdflatex or lualatex")
+                .hasArg(false)
+                .required(false)
+                .build());
+        options.addOption(Option.builder("c").longOpt("convert")
+                .desc("converts PDF to PNG or JPEG file")
+                .hasArg(true)
+                .required(false)
+                .build());
+        options.addOption(Option.builder("cc").longOpt("copyclipboard")
+                .desc("converts PDF to image and copies it to the clipboard (default PNG)")
                 .hasArg(false)
                 .required(false)
                 .build());
@@ -90,6 +115,14 @@ public class ASPECT {
         boolean free = false;
         boolean animate = false;
         boolean verbose = false;
+        boolean keepTemporaryFiles = false;
+
+        /* PDF to Image conversion */
+        boolean generateOutputImage = false;
+        int outputImageDPI = 1200;
+        String outputImageFormat = "png";
+        boolean copyToClipboard = false;
+        /* ----------------------- */
 
         String resizeFactor = "1";
         String speedFactor = "1";
@@ -111,6 +144,9 @@ public class ASPECT {
             }
             if(cmd.hasOption("nobuild")) {
                 TexPdfTh.pdfBuild = false;
+            }
+            if(cmd.hasOption("k")) {
+                keepTemporaryFiles = true;
             }
 
             if (cmd.hasOption("b")) {
@@ -134,6 +170,25 @@ public class ASPECT {
                 animate = true;
                 if (cmd.hasOption("s")) {
                     speedFactor = cmd.getOptionValue("s");
+                }
+            }
+
+            if (cmd.hasOption("c") || cmd.hasOption("cc")) {
+                if (merge || animate) {
+                    System.err.println("***> ASPECT WARNING: image option cannot be used together with animate and/or beamer. I'll ignore it.");
+                }
+                generateOutputImage = true;
+                if (cmd.hasOption("cc")) {
+                    copyToClipboard = true;
+                }
+                if (cmd.hasOption("c")) {
+                    String format = cmd.getOptionValue("c");
+                    if (Objects.equals(format, "PNG") || Objects.equals(format, "JPEG")) {
+                        outputImageFormat = format.toLowerCase();
+                    }
+                    else {
+                        throw new ParseException("***> ASPECT ERROR: allowed image formats are only PNG or JPEG.");
+                    }
                 }
             }
 
@@ -164,6 +219,20 @@ public class ASPECT {
             TexPdfTh tp = new TexPdfTh(System.in, outputFileName, verbose, merge, free, resizeFactor);
             Thread texpdf = new Thread(tp);
 
+            TexPdfTh.buildDirectory = outputFileName + "_aux";
+
+            File directory = new File(TexPdfTh.buildDirectory);
+            if (!directory.exists()) {
+                boolean success = directory.mkdir();
+                if (!success) {
+                    System.err.println("***> ASPECT ERROR: Can't create directory for logs and auxiliary files");
+                    System.exit(1);
+                }
+            }
+            else {
+                deleteDirectory(Paths.get(TexPdfTh.buildDirectory));
+            }
+
             texpdf.start();
             texpdf.join();
 
@@ -174,7 +243,7 @@ public class ASPECT {
                     String mergedFilename = outputFileName + "_merged.tex";
                     PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(mergedFilename)));
 
-                    out.println("\\documentclass{beamer}" + ls
+                    out.println("\\documentclass[dvipsnames]{beamer}" + ls
                             + "\\usepackage{tikz}" + ls
                             + "\\usepackage{graphicx}" + ls
                             + "\\usepackage{xcolor}");
@@ -225,6 +294,68 @@ public class ASPECT {
                 }
             }
 
+            Path directorySource = Paths.get(TexPdfTh.buildDirectory);
+            Path currentDirectory = Paths.get("").toAbsolutePath();
+
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(directorySource, "*.pdf")) {
+                Path lastFileCopied = null;
+
+                List<Path> files = new ArrayList<>();
+                for (Path file : stream) {
+                    files.add(file);
+                }
+
+                files.sort(Comparator.comparing(Path::getFileName));
+
+                for (Path file : files) {
+                    Path destinationFile = currentDirectory.resolve(file.getFileName());
+                    Files.copy(file, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+                    lastFileCopied = file;
+
+                    if (generateOutputImage) {
+                        ProcessBuilder processBuilderImage = new ProcessBuilder();
+                        String filename = file.getFileName().toString();
+                        String imagename = filename.substring(0, filename.lastIndexOf(".")) + "." + outputImageFormat;
+                        processBuilderImage.command("convert", "-density", Integer.toString(outputImageDPI), "-background", "white", "-flatten", filename, imagename);
+
+                        Process imageProcess = processBuilderImage.start();
+                        System.out.println("+++> ASPECT: Converting image " + imagename + " (this may take some time, please wait)");
+                        imageProcess.waitFor();
+
+                        if (imageProcess.exitValue() != 0) {
+                            InputStream in = imageProcess.getInputStream();
+                            if (in.available() > 0) {
+                                BufferedReader errread = new BufferedReader(new InputStreamReader(in));
+                                String error = errread.readLine();
+                                do {
+                                    System.err.println(error);
+                                    error = errread.readLine();
+                                } while (error != null);
+                                System.exit(1);
+                            }
+                            in.close();
+                        }
+                        System.out.println("+++> ASPECT: File created " + imagename + ls);
+                    }
+
+                }
+
+                if (lastFileCopied != null && copyToClipboard) {
+                    String filename = lastFileCopied.getFileName().toString();
+                    String imagename = filename.substring(0, filename.lastIndexOf(".")) + "." + outputImageFormat;
+                    copyImageToClipboard(imagename);
+                }
+
+            } catch (IOException e) {
+                System.err.println("***> ASPECT ERROR: Can't find (or access) the output PDF files");
+                keepTemporaryFiles = true;
+            }
+
+            if (!keepTemporaryFiles) {
+                deleteDirectory(directorySource);
+            }
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -232,5 +363,71 @@ public class ASPECT {
         System.out.println("###############################################################");
         System.out.println("                   ASPECT END  - Goodbye!                      ");
         System.out.println("###############################################################");
+    }
+
+    private static void copyImageToClipboard(String imagename) {
+        File imageFile = new File(imagename);
+        Image image = null;
+        try {
+            image = ImageIO.read(imageFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        Toolkit toolkit = Toolkit.getDefaultToolkit();
+        Clipboard clipboard = toolkit.getSystemClipboard();
+        TransferableImage transferableImage = new TransferableImage(image);
+        clipboard.setContents(transferableImage, null);
+
+        System.out.println("+++> ASPECT: File " + imagename + " copied to clipboard successfully");
+    }
+
+    static void deleteDirectory(Path directory) {
+        try {
+            Files.walkFileTree(directory, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+        } catch (IOException e) {
+            System.err.println("***> ASPECT ERROR: Can't delete temporary directory (" + TexPdfTh.buildDirectory + ")");
+            System.exit(1);
+        }
+    }
+
+    static class TransferableImage implements Transferable {
+        private Image image;
+
+        public TransferableImage(Image image) {
+            this.image = image;
+        }
+
+        @Override
+        public DataFlavor[] getTransferDataFlavors() {
+            return new DataFlavor[] { DataFlavor.imageFlavor };
+        }
+
+        @Override
+        public boolean isDataFlavorSupported(DataFlavor flavor) {
+            return DataFlavor.imageFlavor.equals(flavor);
+        }
+
+        @Override
+        public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
+            if (!DataFlavor.imageFlavor.equals(flavor)) {
+                throw new UnsupportedFlavorException(flavor);
+            }
+            return image;
+        }
     }
 }

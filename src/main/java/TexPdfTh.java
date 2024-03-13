@@ -18,6 +18,7 @@ public class TexPdfTh implements Runnable {
     boolean merge;
     boolean free;
     String resizeFactor;
+    static String buildDirectory = "aspect-output-aux";
     static boolean pdfBuild = true;
     static boolean graph;
     // <fileId, frameNumber>
@@ -38,7 +39,7 @@ public class TexPdfTh implements Runnable {
     private static Map<String, Object> processCommand(String command) {
 
         Pattern nodePattern =
-                Pattern.compile("aspect_(draw|image|color)node\\(([0-9]{0,3}),([0-9]{0,3}),(\\w+|\"[^\"]+\")?(?:,(\\w+|\"[^\"]+\"))?(?:,(\\w+))?(?:,(\\d+))?\\)");
+                Pattern.compile("aspect_(draw|image|color)node\\(([0-9]{0,3}),([0-9]{0,3}),(\\w+|\"[^\"]+\")?(?:,(\\w+|\"[^\"]+\"))?(?:,(\\w+|\"[^\"]+\"))?(?:,(\\d+))?\\)");
         Pattern linePattern =
                 Pattern.compile("aspect_(draw|color)line\\(([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3}),([0-9]{0,3})(?:,(\\w+|\"[^\"]+\"))?(?:,(\\d+))?\\)");
         Pattern arcPattern =
@@ -102,16 +103,16 @@ public class TexPdfTh implements Runnable {
                 break;
             case "color":
                 if (argument2 == null) return null;
-                if (argument2.matches("\"?(tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)\"?") && argument3.matches("\\w+")) {
+                if (argument2.matches("\"?(tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)\"?") && argument3.matches("\"?\\w+\"?")) {
                     argument2 = argument2.replace("\"", "");
                     argument3 = argument3.replace("\"", "");
                     result.put("tikzCommand",
-                            String.format("\\draw [text=%s] (%s,%s) node[text centered, font=\\%s] {%s};", argument3, x, y, argument2, argument1));
-                } else if (argument2.matches("\\w+") && (argument3 == null || argument3.matches("\\d+"))){
+                            String.format("\\draw [color=%s] (%s,%s) node[text centered, font=\\%s] {%s};", argument3, x, y, argument2, argument1));
+                } else if (argument2.matches("\"?\\w+\"?") && (argument3 == null || argument3.matches("\\d+"))){
                     t = matcher.group(6);
                     argument2 = argument2.replace("\"", "");
                     result.put("tikzCommand",
-                            String.format("\\draw [text=%s] (%s,%s) node[text centered] {%s};", argument2, x, y, argument1));
+                            String.format("\\draw [color=%s] (%s,%s) node[text centered] {%s};", argument2, x, y, argument1));
                 } else return null;
                 break;
             case "image":
@@ -135,9 +136,9 @@ public class TexPdfTh implements Runnable {
         String y2 = matcher.group(5);
         String color = matcher.group(6);
         String t = matcher.group(7);
-        result.put("frame", t);
         if (commandType.equals("draw")) {
-            if (color == null) {
+            if (t == null) {
+                t = color;
                 result.put("tikzCommand",
                         String.format("\\draw (%s,%s) -- (%s,%s);", x1, y1, x2, y2));
             } else return null;
@@ -149,6 +150,7 @@ public class TexPdfTh implements Runnable {
                         String.format("\\draw [color=%s] (%s,%s) -- (%s,%s);", color, x1, y1, x2, y2));
             } else return null;
         }
+        result.put("frame", t);
         return result;
     }
 
@@ -162,9 +164,9 @@ public class TexPdfTh implements Runnable {
         String r1 = matcher.group(6);
         String color = matcher.group(7);
         String t = matcher.group(8);
-        result.put("frame", t);
         if (commandType.equals("draw")) {
-            if (color == null) {
+            if (t == null) {
+                t = color;
                 result.put("tikzCommand",
                         String.format("\\draw (%s,%s) arc (%s:%s:%s);", x1, y1, a1, a2, r1));
             } else return null;
@@ -176,6 +178,7 @@ public class TexPdfTh implements Runnable {
                         String.format("\\draw [color=%s] (%s,%s) arc (%s:%s:%s);", color, x1, y1, a1, a2, r1));
             } else return null;
         }
+        result.put("frame", t);
         return result;
     }
 
@@ -188,9 +191,9 @@ public class TexPdfTh implements Runnable {
         String y2 = matcher.group(5);
         String color = matcher.group(6);
         String t = matcher.group(7);
-        result.put("frame", t);
         if (commandType.equals("draw")) {
-            if (color == null) {
+            if (t == null) {
+                t = color;
                 result.put("tikzCommand",
                         String.format("\\draw [->] (%s,%s) -- (%s,%s);", x1, y1, x2, y2));
             } else return null;
@@ -202,6 +205,7 @@ public class TexPdfTh implements Runnable {
                         String.format("\\draw [->, color=%s] (%s,%s) -- (%s,%s);", color, x1, y1, x2, y2));
             } else return null;
         }
+        result.put("frame", t);
         return result;
     }
 
@@ -214,10 +218,10 @@ public class TexPdfTh implements Runnable {
         String y2 = matcher.group(5);
         String color = matcher.group(6);
         String t = matcher.group(7);
-        result.put("frame", t);
         switch (commandType) {
             case "draw":
-                if (color == null) {
+                if (t == null) {
+                    t = color;
                     result.put("tikzCommand",
                             String.format("\\draw (%s,%s) rectangle (%s,%s);", x1, y1, x2, y2));
                 } else return null;
@@ -237,6 +241,7 @@ public class TexPdfTh implements Runnable {
                 } else return null;
                 break;
         }
+        result.put("frame", t);
         return result;
     }
 
@@ -251,10 +256,10 @@ public class TexPdfTh implements Runnable {
         String y3 = matcher.group(7);
         String color = matcher.group(8);
         String t = matcher.group(9);
-        result.put("frame", t);
         switch (commandType) {
             case "draw":
-                if (color == null) {
+                if (t == null) {
+                    t = color;
                     result.put("tikzCommand",
                             String.format("\\draw (%s,%s) -- (%s,%s) -- (%s,%s) -- cycle;", x1, y1, x2, y2, x3, y3));
                 } else return null;
@@ -274,6 +279,7 @@ public class TexPdfTh implements Runnable {
                 } else return null;
                 break;
         }
+        result.put("frame", t);
         return result;
     }
 
@@ -285,10 +291,10 @@ public class TexPdfTh implements Runnable {
         String r = matcher.group(4);
         String color = matcher.group(5);
         String t = matcher.group(6);
-        result.put("frame", t);
         switch (commandType) {
             case "draw":
-                if (color == null) {
+                if (t == null) {
+                    t = color;
                     result.put("tikzCommand",
                             String.format("\\draw (%s,%s) circle (%s);", x1, y1, r));
                 } else return null;
@@ -308,6 +314,7 @@ public class TexPdfTh implements Runnable {
                 } else return null;
                 break;
         }
+        result.put("frame", t);
         return result;
     }
 
@@ -320,10 +327,10 @@ public class TexPdfTh implements Runnable {
         String r2 = matcher.group(5);
         String color = matcher.group(6);
         String t = matcher.group(7);
-        result.put("frame", t);
         switch (commandType) {
             case "draw":
-                if (color == null) {
+                if (t == null) {
+                    t = color;
                     result.put("tikzCommand",
                             String.format("\\draw (%s,%s) ellipse (%s and %s);", x1, y1, r1, r2));
                 } else return null;
@@ -343,6 +350,7 @@ public class TexPdfTh implements Runnable {
                 } else return null;
                 break;
         }
+        result.put("frame", t);
         return result;
     }
 
@@ -378,7 +386,7 @@ public class TexPdfTh implements Runnable {
                         String.format("{%s[minimum size=7mm, %s, draw]},", name, arg1));
             else
                 result.put("tikzCommand",
-                        String.format("{%s[minimum size=7mm, circle, draw]},", name));
+                        String.format("{%s[minimum size=7mm, draw]},", name));
         }
         else if (commandType.equals("color") && arg1 != null){
             arg1 = arg1.replace("\"", "");
@@ -387,7 +395,7 @@ public class TexPdfTh implements Runnable {
                         String.format("{%s[fill=%s, minimum size=7mm, %s, draw]},", name, arg1, arg2));
             else
                 result.put("tikzCommand",
-                        String.format("{%s[fill=%s, minimum size=7mm, circle, draw]},", name, arg1));
+                        String.format("{%s[fill=%s, minimum size=7mm, draw]},", name, arg1));
         }
         result.put("frame", t);
         return result;
@@ -527,17 +535,18 @@ public class TexPdfTh implements Runnable {
     public static void buildLatex(String filename) {
         if (!pdfBuild) return;
         try {
-            String ls = System.getProperty("line.separator");
+            String ls = System.lineSeparator();
             ProcessBuilder processBuilderPDF = new ProcessBuilder();
 
             System.out.println(ls + "+++> ASPECT: Preparing files for building...");
             Thread.sleep(graph ? 5000 : 2000);
 
             if (graph) {
-                processBuilderPDF.command("lualatex", "-halt-on-error", filename);
+                processBuilderPDF.command("lualatex", "-output-directory=" + buildDirectory, "-halt-on-error", filename);
             } else {
-                processBuilderPDF.command("pdflatex", "-halt-on-error", filename);
+                processBuilderPDF.command("pdflatex", "-output-directory=" + buildDirectory, "-halt-on-error", filename);
             }
+
             Process pdf = processBuilderPDF.start();
             String pdfname = filename.substring(0, filename.lastIndexOf(".")) + ".pdf";
             System.out.println("+++> ASPECT: Building " + pdfname);
@@ -554,6 +563,7 @@ public class TexPdfTh implements Runnable {
                     } while (error != null);
                     System.exit(1);
                 }
+                in.close();
             }
             System.out.println("+++> ASPECT: File created " + pdfname + ls);
 
@@ -565,7 +575,7 @@ public class TexPdfTh implements Runnable {
 
     public void run() {
         try {
-            String ls = System.getProperty("line.separator");
+            String ls = System.lineSeparator();
             System.out.println("+++> ASPECT: Reading from stdin..." + ls);
 
             StringBuilder before = new StringBuilder();
@@ -779,7 +789,8 @@ public class TexPdfTh implements Runnable {
                                     + "\\begin{tikzpicture}");
                         }
                         else {
-                            out.println("\\documentclass[tikz]{standalone}" + ls);
+                            out.println("\\documentclass[tikz, dvipsnames]{standalone}" + ls
+                                    + "\\usepackage{xcolor}");
                             if (graph) {
                                 out.println("\\usetikzlibrary{graphs, quotes, graphdrawing}" + ls
                                         + "\\usegdlibrary{force}" + ls);
