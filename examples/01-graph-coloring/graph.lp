@@ -23,7 +23,7 @@ edge(3, 5).
 % Draw
 %%%%%%%%%%%%%%%%%%%%%%%
 
-aspect_graphcolornode(X,Color) :- color(X,Color).
+aspect_graphcolornode(X,Color,circle) :- color(X,Color).
 aspect_graphdrawline(A,B) :- edge(A,B).
 
 
