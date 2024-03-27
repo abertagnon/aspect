@@ -17,7 +17,7 @@ such that two adjacent vertices do not share the same color.*
 
 The ASP encoding of the problem consists of ``node(N)`` atoms to denote the nodes of the graph 
 where ``N`` is an index that identifies the node. Also part of the encoding are ``arc(A,B)`` atoms 
-indicating the edges of the graph and ``colour(N,Color)`` atoms indicating the colour associated
+indicating the edges of the graph and ``color(N,Color)`` atoms indicating the colour associated
 with each vertex.
 
 .. code-block:: prolog
@@ -41,7 +41,7 @@ The ASPECT code required for the visualization is given below.
 
 .. code-block:: prolog
 
-    aspect_graphcolornode(X,Color) :- color(X,Color).
+    aspect_graphcolornode(X,Color,circle) :- color(X,Color).
     aspect_graphdrawline(A,B) :- edge(A,B).
 
 .. tip:: 

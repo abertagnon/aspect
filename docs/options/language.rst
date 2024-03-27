@@ -213,20 +213,27 @@ Graph ASPECT Atoms
        | ``shape`` (opt.) node shape 
        | ``fill`` sets fill :ref:`color <colorDescription>`
 
-* ``shape``:  allows to choose the shape of the node, ``circle`` (default) or ``square``.
+* ``shape``:  allows to choose the ``circle`` shape for the node. By default nodes are represented by squares.
+
+.. hint::
+  * ``aspect_graphdrawnode(1)`` a square-shaped node.
+  * ``aspect_graphdrawnode(2, circle)`` a circular-shaped node.
+
 
 .. list-table::
    :widths: 20 53 31
 
    * - edge  
      - | ``aspect_graphdrawline(A,B,[frame])``
-       | ``aspect_graphquoteline(A,B,"text",[frame])``
+       | ``aspect_graphquoteline(A,B,text,[frame])``
      - | ``A`` name first endpoint
        | ``B`` name second endpoint
-       | ``"text"`` sets edge label
+       | ``text`` sets edge label
    * - arrow  
      - | ``aspect_graphdrawarrow(A,B,[frame])``
-       | ``aspect_graphquotearrow(A,B,"text",[frame])``
+       | ``aspect_graphquotearrow(A,B,text,[frame])``
      - | ``A`` name arrow tail
        | ``B`` name arrow tip
-       | ``"text"`` sets edge label
+       | ``text`` sets edge label
+
+* ``text``:  quoted or unquoted text. **If text contains whitespaces or special characters, quotation marks are mandatory**.

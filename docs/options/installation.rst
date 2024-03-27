@@ -4,17 +4,18 @@ Installation
 Prerequisites
 -------------
 
-The current release of ASPECT depends on `pdfTeX <https://www.tug.org/applications/pdftex/>`_ and `LuaTeX <https://www.luatex.org/>`_.
+| The current release of ASPECT depends on `pdfTeX <https://www.tug.org/applications/pdftex/>`_ and `LuaTeX <https://www.luatex.org/>`_.
+| (Optional) `ImageMagick <https://imagemagick.org/>`_ is required for generating PNG and/or JPEG images.
 
 .. note:: 
-   If you cannot install the dependencies run the ASPECT interpreter with the ``--nobuild`` parameter. 
+   If you cannot install the dependencies run the ASPECT interpreter with the ``--nobuild`` option. 
    ASPECT will not be able to output PDF documents, only LaTeX files will be generated.
 
 Please refer to the manual of the various software for their installation on your system.
 
 If you are in a hurry, an easy way to install dependencies is to run the following commands.
 
-* On *Debian based Linux distributions*, install TeX Live:
+* On *Debian based Linux distributions*, install **TeX Live**:
 
 .. code-block:: bash
 
@@ -24,7 +25,7 @@ If you are in a hurry, an easy way to install dependencies is to run the followi
 To make sure everything is ready try running in a shell the following commands:
 
 * ``pdflatex --version``
-* ``lualtex --version``
+* ``lualatex --version``
 
 you should see something like
 
@@ -38,6 +39,30 @@ you should see something like
 
    This is LuaHBTeX, Version X.X.X (TeX Live X)
    Development id: X
+
+
+* On *Debian based Linux distributions*, install **ImageMagick**:
+
+.. code-block:: bash
+
+    sudo apt install imagemagick
+
+To make sure ImageMagick is installed correctly try running in a shell the following commands:
+
+* ``magick -version``
+* ``convert -version``
+
+you should see something like
+
+.. code-block:: bash
+
+    Version: ImageMagick X.X.X-X https://imagemagick.org
+    Copyright: (C) 1999 ImageMagick Studio LLC
+    License: https://imagemagick.org/script/license.php
+    Features: Cipher DPC HDRI Modules OpenMP(5.0)
+    Delegates (built-in): bzlib fontconfig freetype gslib heic jng jp2 jpeg jxl lcms lqr ltdl lzma openexr png ps raw tiff webp xml zlib zstd
+    Compiler: gcc (X.X)
+
 
 Install ASPECT
 --------------

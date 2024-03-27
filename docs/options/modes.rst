@@ -1,20 +1,25 @@
 Operating Modes
 +++++++++++++++
 
+The command ``java -jar ASPECT.jar --help`` shows all ASPECT options.
+
 .. code-block:: none
 
    usage: ASPECT [options]
-   -a,--animate        enable animate mode
-   -after <arg>        set after file used in free mode (default after.tex)
-   -b,--beamer         enable beamer mode
-   -before <arg>       set before file used in free mode (default before.tex)
-   -f,--free           enable free mode
-   -h,--help           shows ASPECT command line options
-   -nobuild            disables automatic building (via pdflatex or lualatex) of the files created
-   -o,--output <arg>   set name for output file
-   -r,--resize <arg>   set resize parameter for beamer mode, % of \textwidth, from 0 to 1 (default 1)
-   -s,--speed <arg>    set speed parameter for animate mode (default 1)
-   -v,--verbose        verbose output (shows on the screen all ASPECT atomic formulas received as input)
+   -a,--animate          enable animate mode
+   -after <arg>          set after file used in free mode (default after.tex)
+   -b,--beamer           enable beamer mode
+   -before <arg>         set before file used in free mode (default before.tex)
+   -c,--convert <arg>    converts PDF to PNG or JPEG file
+   -cc,--copyclipboard   converts PDF to image and copies it to the clipboard (default PNG)
+   -f,--free             enable free mode
+   -h,--help             shows ASPECT command line options
+   -k,--keep             maintains logs and auxiliary files produced by pdflatex or lualatex
+   -nobuild              disables automatic building (via pdflatex or lualatex) of the files created
+   -o,--output <arg>     set name for output file
+   -r,--resize <arg>     set resize parameter for beamer mode, % of \textwidth, from 0 to 1 (default 1)
+   -s,--speed <arg>      set speed parameter for animate mode (default 1)
+   -v,--verbose          verbose output (shows on the screen all ASPECT atomic formulas received as input)
 
 ASPECT interpreter supports 4 operating modes called **standard** (default), **beamer**, **free**, **animate**. 
 
@@ -23,8 +28,8 @@ During testing, we verified compatibility with `clingo <https://potassco.org/cli
 
 .. code-block:: none
  
-   clingo <clingo arguments> | java -jar ASPECT.jar <arguments>
-   dlv <dlv arguments> | java -jar ASPECT.jar <arguments> 
+   clingo <clingo arguments> | java -jar ASPECT.jar [options]
+   dlv <dlv arguments> | java -jar ASPECT.jar [options]
 
 
 Standard Mode
@@ -37,7 +42,7 @@ for each answer set, for generating the corresponding LaTeX file.
 
 .. note:: 
    In all operating modes the building of output file(s) from LaTeX file format to PDF file format is enabled by default but can be disabled 
-   by passing the ``-nobuild`` parameter when invoking the interpreter.
+   by passing the ``-nobuild`` option when invoking the interpreter.
 
 
 Other modes of operation
@@ -111,3 +116,40 @@ When animate mode is used ASPECT interpreter accepts an integer argument ``-s`` 
 
 .. attention::
    Animate mode **cannot be used togheter with beamer mode** but can be used together with *free* operating mode to customize generated documents.
+
+
+Other Options
+--------------------
+
+Listed below are some useful ASPECT options that can be invoked from the command line.
+
+PDF to Image Conversion
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Thanks to the `ImageMagick <https://imagemagick.org/>`_ software, ASPECT can automatically convert PDFs into PNG or JPEG images. 
+Conversion can be enabled by passing the option ``-c`` `<arg>` (or ``--convert`` `<arg>`) with argument PNG or JPEG depending on the desired format. 
+This way, once the PDF output is generated via `pdflatex` or `lualatex`, it will be converted into an image.
+
+
+Image to Clipboard
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The option ``-cc`` (or ``--copyclipboard``) allows converting PDFs into images but automatically copies the generated image 
+(or the last image, in case more than one is generated) into the clipboard so that it is available for pasting into any document. 
+By default, this option generates images in PNG format; when used together with the ``-c`` `<arg>` (or ``--convert`` `<arg>`) option, it is possible to generate JPEG images.
+
+.. tip:: 
+
+   This is an example of how to generate images in JPEG format when using the ``--copyclipboard`` option.
+
+   .. code-block:: bash
+
+        java -jar ASPECT.jar --copyclipboard --convert JPEG
+
+   
+
+
+
+
+
+
