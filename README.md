@@ -4,9 +4,6 @@
 ![Java CI with Maven](https://github.com/abertagnon/aspect/actions/workflows/maven.yml/badge.svg?branch=main)
 [![Documentation Status](https://readthedocs.org/projects/aspect-docs/badge/?version=latest)](https://aspect-docs.readthedocs.io/en/latest/?badge=latest)
 
-> **Warning**  
-> On December 10, 2023 we released version 0.1.3 with significant changes, the new documentation is still being updated, we apologize for the inconvenience.
-
 ## Documentation
 📚 Full Documentation: [`https://aspect-docs.readthedocs.io/`](https://aspect-docs.readthedocs.io/)
 
