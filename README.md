@@ -18,15 +18,18 @@ The first release of this tool (until v0.1.2) is described in the paper [*ASPECT
 
 #### How to cite
 ```
-@inproceedings{ASPECT2023,
-  author       = {Alessandro Bertagnon and Marco Gavanelli and Fabio Zanotti},
-  editor       = {Agostino Dovier and Andrea Formisano},
-  title        = {{ASPECT:} Answer Set rePresentation as vEctor graphiCs in laTex},
-  booktitle    = {Proceedings of the 38th Italian Conference on Computational Logic, Udine, Italy, June 21-23, 2023},
-  series       = {{CEUR} Workshop Proceedings},
-  volume       = {3428},
-  publisher    = {CEUR-WS.org},
-  year         = {2023},
-  url          = {https://ceur-ws.org/Vol-3428/paper3.pdf}
+@article{ASPECT2024,
+    author = {Bertagnon, Alessandro and Gavanelli, Marco},
+    title = {ASPECT: Answer Set rePresentation as vEctor graphiCs in laTex},
+    journal = {Journal of Logic and Computation},
+    volume = {34},
+    number = {8},
+    pages = {1580-1607},
+    year = {2024},
+    month = {09},
+    issn = {0955-792X},
+    doi = {10.1093/logcom/exae042},
+    url = {https://doi.org/10.1093/logcom/exae042},
+    eprint = {https://academic.oup.com/logcom/article-pdf/34/8/1580/60953129/exae042.pdf},
 }
 ```
