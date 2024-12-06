@@ -16,6 +16,8 @@ You can also [contact us](https://docente.unife.it/alessandro.bertagnon) by emai
 ## Publications
 The first release of this tool (until v0.1.2) is described in the paper [*ASPECT: Answer Set rePresentation as vEctor graphiCs in laTex*](https://ceur-ws.org/Vol-3428/paper3.pdf) by Alessandro Bertagnon, Marco Gavanelli and Fabio Zanotti accepted for publication at the 38th Italian Conference on Computational Logic ([CILC 2023](https://www.programmazionelogica.it/associazione/il-convegno/cilc23/)).
 
+An [extended version](https://academic.oup.com/logcom/article/34/8/1580/7744200), which details the features introduced up to version v0.1.4, including support for animations and the introduction of a domain-specific language to define pictures, has been published in the [Journal of Logic and Computation](https://academic.oup.com/logcom). 
+
 #### How to cite
 ```
 @article{ASPECT2024,
