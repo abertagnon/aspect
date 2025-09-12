@@ -23,7 +23,7 @@ public class ASPECT {
                 "               /_/ \\_\\___/_| |___\\___| |_|  " + ls;
         System.out.println(asciiTitle);
         System.out.println(" ASPECT: Answer Set rePresentation as vEctor graphiCs in laTex ");
-        System.out.println("        https://github.com/abertagnon/aspect -- v0.1.4         ");
+        System.out.println("        https://github.com/abertagnon/aspect -- v0.2.1         ");
         // String yellowColor = "\u001B[33m";
         // String resetColor = "\u001B[0m";
         // String debugText = " ************** TEST ONLY -- NOT FOR PRODUCTION ************** ";
@@ -38,6 +38,11 @@ public class ASPECT {
                 .build());
         options.addOption(Option.builder("v").longOpt("verbose")
                 .desc("verbose output (shows on the screen all ASPECT atomic formulas received as input)")
+                .hasArg(false)
+                .required(false)
+                .build());
+        options.addOption(Option.builder("d").longOpt("debug")
+                .desc("enable internal debug logs for ASPECT processing")
                 .hasArg(false)
                 .required(false)
                 .build());
@@ -115,6 +120,7 @@ public class ASPECT {
         boolean free = false;
         boolean animate = false;
         boolean verbose = false;
+        boolean debug = false;
         boolean keepTemporaryFiles = false;
 
         /* PDF to Image conversion */
@@ -141,6 +147,9 @@ public class ASPECT {
             }
             if(cmd.hasOption("v")) {
                 verbose = true;
+            }
+            if(cmd.hasOption("d")) {
+                debug = true;
             }
             if(cmd.hasOption("nobuild")) {
                 TexPdfTh.pdfBuild = false;
@@ -216,7 +225,7 @@ public class ASPECT {
         }
 
         try {
-            TexPdfTh tp = new TexPdfTh(System.in, outputFileName, verbose, merge, free, resizeFactor);
+            TexPdfTh tp = new TexPdfTh(System.in, outputFileName, verbose, debug, merge, free, resizeFactor);
             Thread texpdf = new Thread(tp);
 
             TexPdfTh.buildDirectory = outputFileName + "_aux";
@@ -245,6 +254,7 @@ public class ASPECT {
 
                     out.println("\\documentclass[dvipsnames]{beamer}" + ls
                             + "\\usepackage{tikz}" + ls
+                            + "\\usetikzlibrary{calc}" + ls
                             + "\\usepackage{graphicx}" + ls
                             + "\\usepackage{xcolor}");
 
