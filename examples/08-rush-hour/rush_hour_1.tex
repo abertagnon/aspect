@@ -1,0 +1,61 @@
+\begin{frame}
+\begin{center}
+\resizebox{0.7\textwidth}{!}{
+\begin{tikzpicture}
+  \draw [line width=3pt] (10,10) -- (10,70);
+  \draw [line width=3pt] (10,10) -- (70,10);
+  \draw [line width=3pt] (10,20) -- (70,20);
+  \draw [line width=3pt] (10,30) -- (70,30);
+  \draw [line width=3pt] (10,40) -- (70,40);
+  \draw [line width=3pt] (10,50) -- (70,50);
+  \draw [line width=3pt] (10,60) -- (70,60);
+  \draw [line width=3pt] (10,70) -- (70,70);
+  \draw [line width=3pt] (20,10) -- (20,70);
+  \draw [line width=3pt] (30,10) -- (30,70);
+  \draw [line width=3pt] (40,10) -- (40,70);
+  \draw [line width=3pt] (50,10) -- (50,70);
+  \draw [line width=3pt] (60,10) -- (60,70);
+  \draw [line width=3pt] (70,10) -- (70,70);
+  \draw [fill=black] (70,40) rectangle (71,50);
+  \only<1>{ \draw [line width=12pt,fill=red] (11,41) rectangle (29,49); }
+  \only<1-2>{ \draw [fill=gray!60] (11,51) rectangle (19,69); }
+  \only<1-3>{ \draw [fill=violet!60] (61,11) rectangle (69,29); }
+  \only<1-4>{ \draw [fill=yellow!60] (41,11) rectangle (59,19); }
+  \only<1-5>{ \draw [fill=pink!60] (41,21) rectangle (49,39); }
+  \only<1-6>{ \draw [fill=orange!60] (41,41) rectangle (49,59); }
+  \only<1-7>{ \draw [fill=green!60] (21,61) rectangle (39,69); }
+  \only<1-8>{ \draw [fill=cyan!60] (51,51) rectangle (69,59); }
+  \only<1-9>{ \draw [fill=blue!60] (41,61) rectangle (59,69); }
+  \only<1-11>{ \draw [fill=teal!60] (51,21) rectangle (59,49); }
+  \only<1-13>{ \draw [fill=magenta!60] (11,31) rectangle (39,39); }
+  \only<1-17>{ \draw [fill=lime!60] (31,11) rectangle (39,29); }
+  \only<2-16>{ \draw [line width=12pt,fill=red] (21,41) rectangle (39,49); }
+  \only<3-14>{ \draw [fill=gray!60] (11,41) rectangle (19,59); }
+  \only<4-12>{ \draw [fill=violet!60] (61,21) rectangle (69,39); }
+  \only<5-20>{ \draw [fill=yellow!60] (51,11) rectangle (69,19); }
+  \only<6-19>{ \draw [fill=pink!60] (41,11) rectangle (49,29); }
+  \only<7-10>{ \draw [fill=orange!60] (41,31) rectangle (49,49); }
+  \only<8-27>{ \draw [fill=green!60] (11,61) rectangle (29,69); }
+  \only<9-15>{ \draw [fill=cyan!60] (21,51) rectangle (39,59); }
+  \only<10-23>{ \draw [fill=blue!60] (31,61) rectangle (49,69); }
+  \only<11-24>{ \draw [fill=orange!60] (41,41) rectangle (49,59); }
+  \only<12-22>{ \draw [fill=teal!60] (51,41) rectangle (59,69); }
+  \only<13-21>{ \draw [fill=violet!60] (61,51) rectangle (69,69); }
+  \only<14-18>{ \draw [fill=magenta!60] (41,31) rectangle (69,39); }
+  \only<15-27>{ \draw [fill=gray!60] (11,11) rectangle (19,29); }
+  \only<16-27>{ \draw [fill=cyan!60] (11,51) rectangle (29,59); }
+  \only<17-26>{ \draw [line width=12pt,fill=red] (11,41) rectangle (29,49); }
+  \only<18-25>{ \draw [fill=lime!60] (31,41) rectangle (39,59); }
+  \only<19-27>{ \draw [fill=magenta!60] (11,31) rectangle (39,39); }
+  \only<20-27>{ \draw [fill=pink!60] (41,21) rectangle (49,39); }
+  \only<21-27>{ \draw [fill=yellow!60] (21,11) rectangle (39,19); }
+  \only<22-27>{ \draw [fill=violet!60] (61,11) rectangle (69,29); }
+  \only<23-27>{ \draw [fill=teal!60] (51,11) rectangle (59,39); }
+  \only<24-27>{ \draw [fill=blue!60] (51,61) rectangle (69,69); }
+  \only<25-27>{ \draw [fill=orange!60] (41,51) rectangle (49,69); }
+  \only<26-27>{ \draw [fill=lime!60] (31,51) rectangle (39,69); }
+  \only<27>{ \draw [line width=12pt,fill=red] (51,41) rectangle (69,49); }
+\end{tikzpicture}
+}
+\end{center}
+\end{frame}

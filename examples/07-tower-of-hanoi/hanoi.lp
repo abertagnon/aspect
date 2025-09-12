@@ -42,15 +42,30 @@ peg_x(b, 20).
 peg_x(c, 34).
 
 % draw pegs
-aspect_fillrectangle(X, 0, X+2, 18, gray) :- peg(P), peg_x(P, X).
+aspect_rectangle(X, 0, X+2, 18, pegs) :- peg(P), peg_x(P, X).
 % draw disks
 disk_level(Count, D1, P, T) :- on(D1, P, T), #count { D2 : on(D2, P, T), disk(D2), D2 < D1} = Count.
-aspect_fillrectangle(X-Width, L*2, X+2+Width, (L*2)+2, Color, T+1) :- 
+aspect_rectangle(X-Width, L*2, X+2+Width, (L*2)+2, s(fill,Color), T+1) :- 
     on(D, P, T), peg(P), peg_x(P, X), disk_color(D, Color), disk_width(D, Width), disk_level(L, D, P, T).
 % print peg label
-aspect_drawnode(X+1, 19, P, "Huge"):- peg(P), peg_x(P,X).
+aspect_drawnode(X+1, 19, P, "label"):- peg(P), peg_x(P,X).
 % print move
-aspect_drawnode(16, 22, "move ", "Huge", T):- T = 1..moves.
-aspect_colornode(21, 22, Color, "Huge", Color, T) :- move(D,_,T), disk_color(D,Color).
-aspect_drawnode(25, 22, " in ", "Huge", T):- T = 1 ..moves.
-aspect_drawnode(28, 22, P, "Huge", T) :- move(_,P,T).
+aspect_drawnode(16, 22, "move ", "peg", T):- T = 1..moves.
+aspect_drawnode(21, 22, Color, ("peg", s(text,Color)), T) :- move(D,_,T), disk_color(D,Color).
+aspect_drawnode(25, 22, " in ", "peg", T):- T = 1 ..moves.
+aspect_drawnode(28, 22, P, "peg", T) :- move(_,P,T).
+% background
+aspect_rectangle(0, 0, 42, 24, background).
+
+% styles
+aspect_style(pegs, "fill", "gray").
+
+aspect_style(label, "font", "\\Huge").
+aspect_style(peg, "font", "\\fontsize{80pt}{96pt}\\selectfont").
+aspect_style(peg, "anchor", "base").
+
+aspect_style(background, "fill", "none").
+aspect_style(background, "draw", "none").
+
+aspect_style(s(text,C), text, C) :- disk_color(_, C).
+aspect_style(s(fill,C), fill, C) :- disk_color(_, C).
