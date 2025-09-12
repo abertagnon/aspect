@@ -35,3 +35,9 @@ An [extended version](https://academic.oup.com/logcom/article/34/8/1580/7744200)
     eprint = {https://academic.oup.com/logcom/article-pdf/34/8/1580/60953129/exae042.pdf},
 }
 ```
+
+## Contributors
+We want to thank all students that contributed to the development of ASPECT during their thesis at the University of Ferrara:
+- Fabio Zanotti
+- Lorenzo Chesta
+- Francesco Palombo   
