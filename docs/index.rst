@@ -11,8 +11,8 @@ Welcome to ASPECT's documentation!
 An intuitive and declarative way to graphically represent answer sets in LaTeX 
 
 .. warning:: 
-   This documentation applies only to version ``0.1.3`` or later of the ASPECT interpreter; 
-   earlier versions are no longer supported.
+   This documentation applies only to version ``0.2.1`` or later of the ASPECT interpreter.
+   Earlier versions are no longer supported due to a major syntax revision that introduced incompatibilities with older examples and reference materials.
 
 .. toctree::
    :maxdepth: 2
@@ -21,6 +21,8 @@ An intuitive and declarative way to graphically represent answer sets in LaTeX
    options/installation
    options/modes
    options/language
+   options/attributes
+   options/dl
    options/examples
 
 

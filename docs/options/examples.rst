@@ -103,14 +103,26 @@ of the squares to create the classic chequered pattern.
 
 .. code-block:: prolog
 
-    aspect_fillrectangle(2*I-1,2*J-1,2*I+1,2*J+1,gray):- I = 1..n, J = 1..n, I\2=J\2.
-    aspect_drawrectangle(2*I-1,2*J-1,2*I+1,2*J+1):- I = 1..n, J = 1..n, I\2!=J\2.
+    aspect_rectangle(2*I-1,2*J-1,2*I+1,2*J+1,dark):- I = 1..n, J = 1..n, I\2=J\2.
+    aspect_rectangle(2*I-1,2*J-1,2*I+1,2*J+1,light):- I = 1..n, J = 1..n, I\2!=J\2.
+
+    aspect_style(dark, "fill", "gray").
+    aspect_style(light, "fill", "white").
 
 In a similar fashion, we can draw the queens with:
 
 .. code-block:: prolog
 
-    aspect_imagenode(2*I,2*J,"./examples/02-n-queens/queen.png",50):- queen(I,J).
+    aspect_imagenode(2*I,2*J,"./examples/02-n-queens/queen.png",queen):- queen(I,J).
+    aspect_style(queen, "width", 50).
+
+It is a good idea to use layers to put the queens on top of the squares:
+
+.. code-block:: prolog
+
+    aspect_layer(dark, 0).
+    aspect_layer(light, 0).
+    aspect_layer(queen, 1).
 
 .. tip:: 
     To try this example (using `clingo <https://potassco.org/clingo/>`_ as ASP solver) run the following command:
@@ -166,13 +178,17 @@ The graphic animation depicting the entire sequence of moves to solve the proble
 .. code-block:: prolog
 
     % draw pegs
-    aspect_fillrectangle(X, 0, X+2, 18, gray) :- peg(P), peg_x(P, X).
-   
+    aspect_rectangle(X, 0, X+2, 18, pegs) :- peg(P), peg_x(P, X).
+
     % draw disks
     disk_level(Count, D1, P, T) :- on(D1, P, T), #count { D2 : on(D2, P, T), disk(D2), D2 < D1} = Count.
-    
-    aspect_fillrectangle(X-Width, L*2, X+2+Width, (L*2)+2, Color, T+1) :- 
-      on(D, P, T), peg(P), peg_x(P, X), disk_color(D, Color), disk_width(D, Width), disk_level(L, D, P, T).
+
+    aspect_rectangle(X-Width, L*2, X+2+Width, (L*2)+2, s(fill,Color), T+1) :- 
+        on(D, P, T), peg(P), peg_x(P, X), disk_color(D, Color), disk_width(D, Width), disk_level(L, D, P, T).
+
+    % styles
+    aspect_style(pegs, "fill", "gray").
+    aspect_style(s(fill,C), fill, C) :- disk_color(_, C).
 
 Note that the rectangles representing the pegs do not include the ``frame`` parameter since they are intended to be present throughout the entire animation. 
 On the other hand, the disks have the ``frame`` parameter, and it corresponds to the variable ``T`` of the ``on(D,P,T)`` atom.
