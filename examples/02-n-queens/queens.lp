@@ -10,14 +10,15 @@
 % Draw
 %%%%%%%%%%%%%%%%%%%%%%%
 
-aspect_rectangle(2*I-1,2*J-1,2*I+1,2*J+1,0):- I = 1..n, J = 1..n, I\2=J\2.
-aspect_rectangle(2*I-1,2*J-1,2*I+1,2*J+1):- I = 1..n, J = 1..n, I\2!=J\2.
-aspect_imagenode(2*I,2*J,"./examples/02-n-queens/queen.png",1):- queen(I,J).
+aspect_rectangle(2*I-1,2*J-1,2*I+1,2*J+1,dark):- I = 1..n, J = 1..n, I\2=J\2.
+aspect_rectangle(2*I-1,2*J-1,2*I+1,2*J+1,light):- I = 1..n, J = 1..n, I\2!=J\2.
+aspect_imagenode(2*I,2*J,"./examples/02-n-queens/queen.png",queen):- queen(I,J).
 
-aspect_style(0, "fill", gray).
-aspect_style(0, "draw", "").
+aspect_style(dark, "fill", "gray").
+aspect_style(light, "fill", "white").
 
-aspect_style(1, "width", 50).
+aspect_style(queen, "width", 50).
 
-aspect_layer(0, 0).
-aspect_layer(1, 1).
+aspect_layer(dark, 0).
+aspect_layer(light, 0).
+aspect_layer(queen, 1).
